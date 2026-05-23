@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Student</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}">
+</head>
+<body>
+
+    <div class="dashboard-header">
+        Edit Student Profile
+    </div>
+
+    <div class="dashboard-container">
+
+        <div class="cards" style="max-width: 760px; margin: auto; gap: 16px;">
+            <div class="card" style="flex: 1;">
+                <h2>Current Profile</h2>
+                <p><strong>Reg ID:</strong> {{ student.reg_id or 'N/A' }}</p>
+                <p><strong>Name:</strong> {{ student.name }}</p>
+                <p><strong>Program:</strong> {{ student.program }}</p>
+                <p><strong>Department:</strong> {{ student.department }}</p>
+                <p><strong>Fee Status:</strong> {{ student.fee_status }}</p>
+                <p><strong>Password:</strong> Hidden for security. Use the new password field below to reset it.</p>
+            </div>
+            <div class="card" style="flex: 1;">
+                <h2>Update Details</h2>
+                <form action="{{ url_for('edit_student', id=student.id) }}" method="post">
+                    <ul>
+                        <li><input type="text" name="name" placeholder="Full Name" value="{{ student.name }}" required></li>
+                        <li>
+                            <select name="degree_level" required>
+                                <option value="">Select Degree Level</option>
+                                <option value="BS" {% if degree_level=='BS' %}selected{% endif %}>BS</option>
+                                <option value="MS" {% if degree_level=='MS' %}selected{% endif %}>MS</option>
+                                <option value="PhD" {% if degree_level=='PhD' %}selected{% endif %}>PhD</option>
+                            </select>
+                        </li>
+                        <li><input type="text" name="degree_type" placeholder="Degree Type (e.g. Software Engineering)" value="{{ degree_type }}" required></li>
+                        <li>
+                            <select name="program" required>
+                                <option value="">Select Program</option>
+                                <option value="UG" {% if student.program=='UG' %}selected{% endif %}>UG</option>
+                                <option value="GS" {% if student.program=='GS' %}selected{% endif %}>GS</option>
+                            </select>
+                        </li>
+                        <li><input type="text" name="department" placeholder="Department" value="{{ student.department }}" required></li>
+                        <li>
+                            <select name="fee_status" required>
+                                <option value="">Select Fee Status</option>
+                                <option value="Paid" {% if student.fee_status=='Paid' %}selected{% endif %}>Paid</option>
+                                <option value="Unpaid" {% if student.fee_status=='Unpaid' %}selected{% endif %}>Unpaid</option>
+                                <option value="Partial" {% if student.fee_status=='Partial' %}selected{% endif %}>Partial</option>
+                            </select>
+                        </li>
+                        <li><input type="text" name="father_name" placeholder="Father Name" value="{{ student.father_name }}"></li>
+                        <li><input type="password" name="new_password" placeholder="New Password (leave blank to keep current)"></li>
+                        <li><button type="submit" class="badge" style="background-color:#00bfa6;">Update Student</button></li>
+                    </ul>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="dashboard-footer">
+        Copyright Agriculture University of Faisalabad | Edit Student
+    </div>
+
+</body>
+</html>

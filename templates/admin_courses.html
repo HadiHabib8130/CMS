@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Courses</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}">
+</head>
+<body>
+
+    <div class="dashboard-header">
+        Manage Courses
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div style="max-width: 960px; margin: 16px auto; padding: 12px;">
+            {% for category, message in messages %}
+                <div style="margin-bottom: 10px; padding: 14px 16px; border-radius: 8px; background: {% if category == 'success' %}#e8f5e9{% elif category == 'danger' %}#ffebee{% elif category == 'warning' %}#fff8e1{% else %}#e3f2fd{% endif %}; color: #202124; border: 1px solid {% if category == 'success' %}#c8e6c9{% elif category == 'danger' %}#ffcdd2{% elif category == 'warning' %}#ffecb3{% else %}#bbdefb{% endif %};">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="dashboard-container">
+
+        <div class="cards" style="margin-bottom: 20px; gap: 20px;">
+            <div class="card" style="flex: 1; min-width: 240px;">
+                <h2>Create Course</h2>
+                <p style="margin-bottom: 16px;">Add a new course record with a unique course code.</p>
+                <a href="{{ url_for('add_course') }}" class="badge" style="background-color:#1f4fd8; display:inline-block; margin-top: 8px;">Add Course</a>
+            </div>
+            <div class="card" style="flex: 1; min-width: 240px;">
+                <h2>Course List</h2>
+                <p style="margin-bottom: 16px;">Search and manage the available courses below.</p>
+                <span class="badge" style="background-color:#00bfa6;">Total Courses: {{ courses|length }}</span>
+            </div>
+        </div>
+
+        <div class="card" style="width: 100%; padding: 24px;">
+            <form action="{{ url_for('view_courses') }}" method="get" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 20px;">
+                <div style="flex: 1; min-width: 240px;">
+                    <label for="q" style="display:block; margin-bottom: 8px; font-weight: 600;">Search courses</label>
+                    <input type="search" id="q" name="q" value="{{ request.args.get('q', '') }}" placeholder="Name, code, or department" style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #c8c8c8;">
+                </div>
+                <button type="submit" class="badge" style="background-color:#1f4fd8; padding: 12px 18px;">Search</button>
+                {% if request.args.get('q') %}
+                <a href="{{ url_for('view_courses') }}" class="badge" style="background-color:#757575; padding: 12px 18px;">Clear</a>
+                {% endif %}
+            </form>
+
+            <div style="overflow-x:auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f7f8fb; text-align: left;">
+                            <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Name</th>
+                            <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Code</th>
+                            <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Credit</th>
+                            <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Theory</th>
+                            <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Practical</th>
+                            <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Department</th>
+                            <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for course in courses %}
+                        <tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ course.name }}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ course.code }}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ course.credit_hours or 'N/A' }}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ course.credit_hours or 'N/A' }}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ course.theory_hours or 'N/A' }}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ course.practical_hours or 'N/A' }}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ course.department or 'N/A' }}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e6e6e6; white-space: nowrap;">
+                                <a href="{{ url_for('edit_course', id=course.id) }}" class="badge" style="background-color:#00bfa6; margin-right: 8px;">Update</a>
+                                <form action="{{ url_for('delete_course', id=course.id) }}" method="post" style="display:inline;">
+                                    <button type="submit" class="badge" style="background-color:#ff5252;">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" style="padding: 24px; text-align: center; color: #555;">No courses found. Use the search box above or add a new course.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="dashboard-footer">
+        Copyright Agriculture University of Faisalabad | Admin - Course Management
+    </div>
+
+</body>
+</html>

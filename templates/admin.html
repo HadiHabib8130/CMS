@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">`
+    <title>Admin Dashboard</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}"></head>
+<body>
+
+    <!-- Header -->
+    <div class="dashboard-header">
+        Admin Dashboard
+    </div>
+
+    <!-- Main Container -->
+    <div class="dashboard-container">
+
+        <div class="cards">
+
+            <!-- Students Card -->
+            <div class="card">
+    <h2>Students <span class="badge">UG / GS</span></h2>
+    <ul>
+        <li><a href="{{ url_for('view_students') }}">Manage Students</a></li>
+    </ul>
+</div>
+
+            <!-- Teachers Card -->
+            <div class="card">
+                <h2>Teachers</h2>
+                <ul>
+                    <li><a href="{{ url_for('view_teachers') }}">Manage Teachers</a></li>
+                    <li>Multiple Departments</li>
+                </ul>
+            </div>
+
+            <!-- Courses Card -->
+            <div class="card">
+                <h2>Courses</h2>
+                <ul>
+                    <li><a href="{{ url_for('view_courses') }}">Manage Courses</a></li>
+                    <li>Active Semester</li>
+                </ul>
+            </div>
+
+            <!-- Attendance Reports Card -->
+            <div class="card">
+                <h2>Attendance Reports</h2>
+                <ul>
+                    <li>Daily Records</li>
+                    <li>Subject-wise Tracking</li>
+                </ul>
+            </div>
+
+            <!-- Fee Management Card -->
+            <div class="card">
+                <h2>Fee Management</h2>
+                <ul>
+                    <li>Paid & Unpaid Status</li>
+                    <li>Semester Fees Overview</li>
+                </ul>
+            </div>
+
+            <!-- University Forms Card -->
+            <div class="card">
+                <h2>University Forms</h2>
+                <ul>
+                    <li>UG-01 Form</li>
+                    <li>GS-10 Form</li>
+                    <li>Automate Form Generation</li>
+                </ul>
+            </div>
+
+            <!-- User Management Card -->
+            <div class="card">
+                <h2>User Management</h2>
+                <ul>
+                    <li>Add / Remove Users</li>
+                    <li>Assign Roles</li>
+                    <li>Manage Credentials</li>
+                </ul>
+            </div>
+
+            <!-- System Reports Card -->
+            <div class="card">
+                <h2>System Reports</h2>
+                <ul>
+                    <li>Generate Attendance Reports</li>
+                    <li>Fee Collection Reports</li>
+                    <li>Course Enrollment Reports</li>
+                </ul>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="dashboard-footer">
+        © Agriculture University of Faisalabad | Admin Dashboard
+    </div>
+
+</body>
+</html>

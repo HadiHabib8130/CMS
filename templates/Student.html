@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Student Dashboard</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}"></head>
+<body>
+
+    <!-- Header -->
+    <div class="dashboard-header">
+        Student Dashboard
+    </div>
+
+    <!-- Main Container -->
+    <div class="dashboard-container">
+
+        <div class="cards">
+
+            <!-- Personal Info Card -->
+            <div class="card">
+                <h2>Personal Info</h2>
+                <ul>
+                    <li>Name: John Doe</li>
+                    <li>Program: Undergraduate <span class="badge">UG</span></li>
+                    <li>Roll No: 12345</li>
+                </ul>
+            </div>
+
+            <!-- Courses Card -->
+            <div class="card">
+                <h2>Courses Enrolled</h2>
+                <ul>
+                    <li>Math 101</li>
+                    <li>Physics 102</li>
+                    <li>Agriculture 201</li>
+                </ul>
+            </div>
+
+            <!-- Attendance Card -->
+            <div class="card">
+                <h2>Attendance</h2>
+                <ul>
+                    <li>Overall Attendance: 85%</li>
+                    <li>Math 101: 90%</li>
+                    <li>Physics 102: 82%</li>
+                </ul>
+            </div>
+
+            <!-- Grades Card -->
+            <div class="card">
+                <h2>Grades</h2>
+                <ul>
+                    <li>Math 101: A</li>
+                    <li>Physics 102: B+</li>
+                    <li>Agriculture 201: A-</li>
+                </ul>
+            </div>
+
+            <!-- Fee Status Card -->
+            <div class="card">
+                <h2>Fee Status</h2>
+                <ul>
+                    <li>Semester 1: Paid <span class="badge">✔</span></li>
+                    <li>Semester 2: Unpaid <span class="badge" style="background-color:#ff5252;">✖</span></li>
+                    <li>Semester 3: Paid <span class="badge">✔</span></li>
+                </ul>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="dashboard-footer">
+        © Agriculture University of Faisalabad | Student Dashboard
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CMS Sign Up</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="login-box">
+    <h2>Create Account</h2>
+
+    <form action="/signup" method="post">
+        <input type="text" name="new_username" placeholder="Username" required>
+        <input type="password" name="new_password" placeholder="Password" required>
+
+        <select name="role" required>
+            <option value="">Select Role</option>
+            <option value="admin">Admin</option>
+            <option value="student">Student</option>
+            <option value="teacher">Teacher</option>
+        </select>
+
+        <button type="submit">Sign Up</button>
+    </form>
+
+    <p class="switch-link">
+        Already have an account?
+        <a href="Login.html">Back to Login</a>
+    </p>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+
+<html>
+   
+
+<head>
+    <title>CMS Login</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body >
+
+
+<div class="login-box">
+    <h2>CMS Login</h2>
+
+    <form action="/login" method="post">
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+    </form>
+
+    <p class="switch-link">
+        Account creation is admin-only.
+    </p>
+</div>
+
+</body>
+</html>
+

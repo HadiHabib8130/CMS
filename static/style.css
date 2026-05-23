@@ -1,0 +1,57 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+
+    /* Background Image */
+    /* background-image:   url("{{ url_for('static', filename='media/uaf.jpg') }}"); */
+    background-color: #2c7be5;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+    /* Center the login box */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+
+.login-box {
+    width: 350px;
+    margin: 80px auto;
+    padding: 25px;
+    background: #ffffff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    border-radius: 8px;
+}
+
+.login-box h2 {
+    text-align: center;
+}
+
+.login-box input
+{
+    width: 94%;
+    padding: 10px;
+    margin-top: 12px;
+}
+.login-box select,
+.login-box button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 12px;
+}
+
+.login-box button {
+    background: #2c7be5;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.switch-link {
+    text-align: center;
+    margin-top: 15px;
+}

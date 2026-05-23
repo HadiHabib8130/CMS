@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Teacher</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}">
+</head>
+<body>
+
+    <div class="dashboard-header">
+        Add New Teacher
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div style="max-width: 700px; margin: 16px auto; padding: 12px;">
+            {% for category, message in messages %}
+                <div style="margin-bottom: 10px; padding: 14px 16px; border-radius: 8px; background: {% if category == 'success' %}#e8f5e9{% elif category == 'danger' %}#ffebee{% elif category == 'warning' %}#fff8e1{% else %}#e3f2fd{% endif %}; color: #202124; border: 1px solid {% if category == 'success' %}#c8e6c9{% elif category == 'danger' %}#ffcdd2{% elif category == 'warning' %}#ffecb3{% else %}#bbdefb{% endif %};">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="dashboard-container">
+
+        <div class="card" style="max-width: 700px; margin: auto;">
+            <h2>Teacher Profile</h2>
+            <p>Enter teacher details and assign one or more courses for specialization.</p>
+            <form action="{{ url_for('add_teacher') }}" method="post">
+                <ul>
+                    <li><input type="text" name="name" placeholder="Full Name" required></li>
+                    <li><input type="email" name="email" placeholder="Email" required></li>
+                    <li><input type="text" name="phone" placeholder="Phone" required></li>
+                    <li><input type="text" name="qualification" placeholder="Qualification" required></li>
+                    <li>
+                        <label for="specialization">Specialization Courses</label>
+                        <select id="specialization" name="specialization" multiple size="6" style="width:100%; padding: 10px; border-radius: 8px; border: 1px solid #c8c8c8;">
+                            {% for course in courses %}
+                                <option value="{{ course.name }}">{{ course.name }} ({{ course.code }})</option>
+                            {% endfor %}
+                        </select>
+                    </li>
+                    <li><input type="text" name="department" placeholder="Department" required></li>
+                    <li><input type="text" name="title" placeholder="Title" required></li>
+                    <li>
+                        <button type="submit" class="badge" style="background-color:#1f4fd8;">Add Teacher</button>
+                        <a href="{{ url_for('view_teachers') }}" class="badge" style="background-color:#757575; margin-left: 12px;">Cancel</a>
+                    </li>
+                </ul>
+            </form>
+        </div>
+
+    </div>
+
+    <div class="dashboard-footer">
+        © Agriculture University of Faisalabad | Add Teacher
+    </div>
+
+</body>
+</html>

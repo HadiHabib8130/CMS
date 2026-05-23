@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Teacher Dashboard</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}"></head>
+<body>
+
+    <!-- Header -->
+    <div class="dashboard-header">
+        Teacher Dashboard
+    </div>
+
+    <!-- Main Container -->
+    <div class="dashboard-container">
+
+        <div class="cards">
+
+            <!-- Personal Info Card -->
+            <div class="card">
+                <h2>Personal Info</h2>
+                <ul>
+                    <li>Name: Dr. Smith</li>
+                    <li>Department: Agriculture</li>
+                    <li>ID: T-1023</li>
+                </ul>
+            </div>
+
+            <!-- Courses Card -->
+            <div class="card">
+                <h2>Courses Teaching</h2>
+                <ul>
+                    <li>Agriculture 201</li>
+                    <li>Plant Biology 202</li>
+                    <li>Soil Science 101</li>
+                </ul>
+            </div>
+
+            <!-- Attendance Records Card -->
+            <div class="card">
+                <h2>Attendance Records</h2>
+                <ul>
+                    <li>Agriculture 201: 88%</li>
+                    <li>Plant Biology 202: 92%</li>
+                    <li>Soil Science 101: 85%</li>
+                </ul>
+            </div>
+
+            <!-- Student Feedback Card -->
+            <div class="card">
+                <h2>Student Feedback</h2>
+                <ul>
+                    <li>Average Rating: 4.5/5 <span class="badge">Excellent</span></li>
+                    <li>Comments Available</li>
+                </ul>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="dashboard-footer">
+        © Agriculture University of Faisalabad | Teacher Dashboard
+    </div>
+
+</body>
+</html>
