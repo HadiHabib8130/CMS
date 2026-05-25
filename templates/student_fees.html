@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Fees</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}">
+</head>
+<body>
+
+    <div class="dashboard-header">
+        My Fees
+    </div>
+
+    <div class="dashboard-container">
+        <div class="card" style="width: 100%; padding: 24px; overflow-x:auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f7f8fb; text-align: left;">
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Semester</th>
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Amount Due</th>
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Amount Paid</th>
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Due Date</th>
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fee in fees %}
+                    <tr>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ fee.semester }}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ fee.amount_due }}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ fee.amount_paid }}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ fee.due_date }}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ fee.status }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="padding: 24px; text-align: center; color: #555;">No fee records available.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="dashboard-footer">
+        Copyright Agriculture University of Faisalabad | Student Fees
+    </div>
+
+</body>
+</html>

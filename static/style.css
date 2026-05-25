@@ -4,8 +4,7 @@ body {
     font-family: Arial, sans-serif;
 
     /* Background Image */
-    /* background-image:   url("{{ url_for('static', filename='media/uaf.jpg') }}"); */
-    background-color: #2c7be5;
+    background-image: url('media/bg-image.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -22,9 +21,11 @@ body {
     width: 350px;
     margin: 80px auto;
     padding: 25px;
-    background: #ffffff;
+    /* background: #ffffff; */
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
     border-radius: 8px;
+    background: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
 .login-box h2 {
@@ -54,4 +55,12 @@ body {
 .switch-link {
     text-align: center;
     margin-top: 15px;
+}
+.cms-heading {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 2rem;
+  font-weight: 800; /* Extra bold for a strong, authoritative look */
+  color: #0b2240;   /* Deep university navy blue */
+  letter-spacing: -0.5px;
+  margin-bottom: 24px;
 }

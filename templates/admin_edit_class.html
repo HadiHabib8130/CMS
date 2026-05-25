@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Class</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}">
+</head>
+<body>
+
+    <div class="dashboard-header">
+        Edit Class
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div style="max-width: 960px; margin: 16px auto; padding: 12px;">
+            {% for category, message in messages %}
+                <div style="margin-bottom: 10px; padding: 14px 16px; border-radius: 8px; background: {% if category == 'success' %}#e8f5e9{% elif category == 'danger' %}#ffebee{% elif category == 'warning' %}#fff8e1{% else %}#e3f2fd{% endif %}; color: #202124; border: 1px solid {% if category == 'success' %}#c8e6c9{% elif category == 'danger' %}#ffcdd2{% elif category == 'warning' %}#ffecb3{% else %}#bbdefb{% endif %};">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="dashboard-container">
+        <div class="card" style="width: 100%; padding: 24px;">
+            <form method="post" style="display: grid; gap: 18px;">
+                <div>
+                    <label for="name">Class Name</label>
+                    <input type="text" id="name" name="name" value="{{ class_row.name }}" required>
+                </div>
+                <div>
+                    <label for="semester">Semester</label>
+                    <input type="text" id="semester" name="semester" value="{{ class_row.semester }}" required>
+                </div>
+                <div>
+                    <label for="year">Year</label>
+                    <input type="number" id="year" name="year" value="{{ class_row.year }}" required>
+                </div>
+                <div>
+                    <label for="department">Department</label>
+                    <input type="text" id="department" name="department" value="{{ class_row.department }}" required>
+                </div>
+
+                <div>
+                    <label style="display:block; margin-bottom: 8px;">Courses & Teachers</label>
+                    {% for course in courses %}
+                        <div style="border: 1px solid #e0e0e0; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
+                            <label>
+                                <input type="checkbox" name="course_ids" value="{{ course.id }}" {% if course.id in assigned %}checked{% endif %}>
+                                {{ course.name }} ({{ course.code }})
+                            </label>
+                            <div style="margin-top: 8px;">
+                                <label for="teacher_for_{{ course.id }}">Assign teacher</label>
+                                <select id="teacher_for_{{ course.id }}" name="teacher_for_{{ course.id }}" style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #c8c8c8;">
+                                    <option value="">-- Select teacher --</option>
+                                    {% for teacher in teachers %}
+                                        {% set specialization = teacher.specialization or '' %}
+                                        {% set allowed_courses = specialization.split(',')|map('trim')|list %}
+                                        <option value="{{ teacher.id }}" {% if assigned[course.id] == teacher.id %}selected{% endif %} {% if course.name not in allowed_courses %}disabled{% endif %}>
+                                            {{ teacher.name }} ({{ teacher.reg_id }}) {% if course.name not in allowed_courses %}- not specialized{% endif %}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <button type="submit" class="badge" style="background-color:#1f4fd8;">Update Class</button>
+                    <a href="{{ url_for('view_classes') }}" class="badge" style="background-color:#757575;">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="dashboard-footer">
+        Copyright Agriculture University of Faisalabad | Admin - Edit Class
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}">
+</head>
+<body>
+
+    <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; padding-right: 24px;">
+        <div>Create Admin Account</div>
+        <a href="{{ url_for('logout') }}" class="badge" style="background-color: #ff5252; color: white; text-decoration: none;">Logout</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div style="max-width: 700px; margin: 16px auto; padding: 12px;">
+            {% for category, message in messages %}
+                <div style="margin-bottom: 10px; padding: 14px 16px; border-radius: 8px; background: {% if category == 'success' %}#e8f5e9{% elif category == 'danger' %}#ffebee{% elif category == 'warning' %}#fff8e1{% else %}#e3f2fd{% endif %}; color: #202124; border: 1px solid {% if category == 'success' %}#c8e6c9{% elif category == 'danger' %}#ffcdd2{% elif category == 'warning' %}#ffecb3{% else %}#bbdefb{% endif %};">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="dashboard-container">
+        <div class="card" style="max-width: 700px; margin: auto;">
+            <h2>New Admin Credentials</h2>
+            <p>Enter the username and password for the new administrator.</p>
+            <form action="{{ url_for('add_admin') }}" method="post">
+                <ul style="list-style: none; padding: 0;">
+                    <li style="margin-bottom: 12px;"><input type="text" name="username" placeholder="Username" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #c8c8c8;"></li>
+                    <li style="margin-bottom: 12px;"><input type="password" name="password" placeholder="Password" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #c8c8c8;"></li>
+                    <li style="margin-top: 18px;">
+                        <button type="submit" class="badge" style="background-color:#1f4fd8; border: none; cursor: pointer;">Create Admin</button>
+                        <a href="{{ url_for('admin_dashboard') }}" class="badge" style="background-color:#757575; margin-left: 12px; text-decoration: none;">Cancel</a>
+                    </li>
+                </ul>
+            </form>
+        </div>
+    </div>
+
+    <div class="dashboard-footer">
+        © Agriculture University of Faisalabad | Create Admin
+    </div>
+
+</body>
+</html>

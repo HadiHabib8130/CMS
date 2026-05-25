@@ -3,63 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <title>Teacher Dashboard</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}"></head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}">
+</head>
 <body>
 
-    <!-- Header -->
-    <div class="dashboard-header">
-        Teacher Dashboard
+    <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; padding-right: 24px;">
+        <div>Teacher Dashboard</div>
+        <a href="{{ url_for('logout') }}" class="badge" style="background-color: #ff5252; color: white; text-decoration: none;">Logout</a>
     </div>
 
-    <!-- Main Container -->
     <div class="dashboard-container">
 
-        <div class="cards">
-
-            <!-- Personal Info Card -->
+        <div class="cards" style="gap: 20px;">
             <div class="card">
                 <h2>Personal Info</h2>
                 <ul>
-                    <li>Name: Dr. Smith</li>
-                    <li>Department: Agriculture</li>
-                    <li>ID: T-1023</li>
+                    <li><strong>Name:</strong> {{ teacher.name }}</li>
+                    <li><strong>Reg ID:</strong> {{ teacher.reg_id or 'N/A' }}</li>
+                    <li><strong>Department:</strong> {{ teacher.department or 'N/A' }}</li>
+                    <li><strong>Title:</strong> {{ teacher.title or 'N/A' }}</li>
                 </ul>
             </div>
 
-            <!-- Courses Card -->
             <div class="card">
-                <h2>Courses Teaching</h2>
+                <h2>Teaching Summary</h2>
                 <ul>
-                    <li>Agriculture 201</li>
-                    <li>Plant Biology 202</li>
-                    <li>Soil Science 101</li>
+                    <li><strong>Classes Assigned:</strong> {{ class_count }}</li>
+                    <li><strong>Courses Assigned:</strong> {{ course_count }}</li>
+                    <li><strong>Students Covered:</strong> {{ student_count }}</li>
                 </ul>
+                <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+                    <a href="{{ url_for('teacher_classes') }}" class="badge">My Classes</a>
+                    <a href="{{ url_for('teacher_results') }}" class="badge">Manage Results</a>
+                    <a href="{{ url_for('teacher_my_attendance') }}" class="badge">View Attendance</a>
+                </div>
             </div>
 
-            <!-- Attendance Records Card -->
-            <div class="card">
-                <h2>Attendance Records</h2>
-                <ul>
-                    <li>Agriculture 201: 88%</li>
-                    <li>Plant Biology 202: 92%</li>
-                    <li>Soil Science 101: 85%</li>
-                </ul>
+            <div class="card" style="flex: 1 1 100%;">
+                <h2>Assigned Classes</h2>
+                {% if assignments %}
+                <div style="overflow-x:auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f7f8fb; text-align: left;">
+                                <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Class</th>
+                                <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Semester</th>
+                                <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Year</th>
+                                <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Department</th>
+                                <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Courses</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for assignment in assignments %}
+                            <tr>
+                                <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ assignment.name }}</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ assignment.semester }}</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ assignment.year }}</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ assignment.department }}</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">
+                                    {% for course in assignment.courses %}
+                                        <div>{{ course.course_name }} ({{ course.course_code }})</div>
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                    <p>No classes assigned yet.</p>
+                {% endif %}
             </div>
-
-            <!-- Student Feedback Card -->
-            <div class="card">
-                <h2>Student Feedback</h2>
-                <ul>
-                    <li>Average Rating: 4.5/5 <span class="badge">Excellent</span></li>
-                    <li>Comments Available</li>
-                </ul>
-            </div>
-
         </div>
 
     </div>
 
-    <!-- Footer -->
     <div class="dashboard-footer">
         © Agriculture University of Faisalabad | Teacher Dashboard
     </div>

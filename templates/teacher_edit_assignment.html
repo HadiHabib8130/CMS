@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Assignment</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}">
+</head>
+<body>
+    <div class="dashboard-header">
+        Edit Assignment
+    </div>
+    <div class="dashboard-container">
+        <div class="card" style="max-width: 600px; margin: 0 auto; padding: 24px;">
+            <h2>Edit Assignment Details</h2>
+            <form method="post" action="{{ url_for('edit_assignment', class_id=class_id, assignment_id=assignment.id) }}" style="display: grid; gap: 18px; margin-top: 16px;">
+                <div>
+                    <label for="title" style="display:block; margin-bottom: 8px;">Title</label>
+                    <input type="text" id="title" name="title" value="{{ assignment.title }}" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #c8c8c8;">
+                </div>
+                <div>
+                    <label for="description" style="display:block; margin-bottom: 8px;">Description</label>
+                    <textarea id="description" name="description" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #c8c8c8;" rows="4">{{ assignment.description }}</textarea>
+                </div>
+                <div>
+                    <label for="due_date" style="display:block; margin-bottom: 8px;">Due Date</label>
+                    <input type="date" id="due_date" name="due_date" value="{{ assignment.due_date }}" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #c8c8c8;">
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 10px;">
+                    <button type="submit" class="badge" style="background-color:#00bfa6; padding: 12px 18px; border: none; cursor: pointer; font-size: 14px;">Update Assignment</button>
+                    <a href="{{ url_for('teacher_class_assignments', id=class_id) }}" class="badge" style="background-color:#757575; padding: 12px 18px; text-decoration: none; font-size: 14px;">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="dashboard-footer">
+        © Agriculture University of Faisalabad | Teacher Dashboard
+    </div>
+</body>
+</html>

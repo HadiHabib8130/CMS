@@ -1,14 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">`
+    <meta charset="UTF-8">
     <title>Admin Dashboard</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}"></head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}">
+    <style>
+        /* Add this to your CSS file or keep it here so the mouse turns into a pointer on hover */
+        .card {
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        /* Optional: Adds a slight zoom effect when hovering over the card so users know it's clickable */
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
 <body>
 
     <!-- Header -->
     <div class="dashboard-header">
-        Admin Dashboard
+        <span>Admin Dashboard</span>
+        <button class="logout-btn" onclick="window.location.href='{{ url_for('logout') }}'">Logout</button>
     </div>
 
     <!-- Main Container -->
@@ -16,77 +31,67 @@
 
         <div class="cards">
 
-            <!-- Students Card -->
-            <div class="card">
-    <h2>Students <span class="badge">UG / GS</span></h2>
-    <ul>
-        <li><a href="{{ url_for('view_students') }}">Manage Students</a></li>
-    </ul>
-</div>
+            <div class="card" onclick="window.location.href='{{ url_for('view_students') }}'">
+                <h2>Students</h2>
+                <ul>
+                    <li>Manage Students</li>
+                    <li>Assign students to classes</li>
+                </ul>
+            </div>
 
-            <!-- Teachers Card -->
-            <div class="card">
+            <div class="card" onclick="window.location.href='{{ url_for('view_teachers') }}'">
                 <h2>Teachers</h2>
                 <ul>
-                    <li><a href="{{ url_for('view_teachers') }}">Manage Teachers</a></li>
-                    <li>Multiple Departments</li>
+                    <li>Manage Teachers</li>
+                    <li>Assign teachers by specialization</li>
                 </ul>
             </div>
 
-            <!-- Courses Card -->
-            <div class="card">
+            <div class="card" onclick="window.location.href='{{ url_for('view_courses') }}'">
                 <h2>Courses</h2>
                 <ul>
-                    <li><a href="{{ url_for('view_courses') }}">Manage Courses</a></li>
-                    <li>Active Semester</li>
+                    <li>Manage Courses</li>
+                    <li>Maintain course catalog</li>
                 </ul>
             </div>
 
-            <!-- Attendance Reports Card -->
-            <div class="card">
-                <h2>Attendance Reports</h2>
+            <div class="card" onclick="window.location.href='{{ url_for('view_classes') }}'">
+                <h2>Classes</h2>
                 <ul>
-                    <li>Daily Records</li>
-                    <li>Subject-wise Tracking</li>
+                    <li>Manage Classes</li>
+                    <li>Create class groups and assign teachers</li>
                 </ul>
             </div>
 
-            <!-- Fee Management Card -->
-            <div class="card">
-                <h2>Fee Management</h2>
+            <div class="card" onclick="window.location.href='{{ url_for('view_fees') }}'">
+                <h2>Fees</h2>
                 <ul>
-                    <li>Paid & Unpaid Status</li>
-                    <li>Semester Fees Overview</li>
+                    <li>Manage Fees</li>
+                    <li>Track payment status</li>
                 </ul>
             </div>
 
-            <!-- University Forms Card -->
-            <div class="card">
-                <h2>University Forms</h2>
+            <div class="card" onclick="window.location.href='{{ url_for('view_results') }}'">
+                <h2>Results</h2>
                 <ul>
-                    <li>UG-01 Form</li>
-                    <li>GS-10 Form</li>
-                    <li>Automate Form Generation</li>
+                    <li>Manage Results</li>
+                    <li>Review grades and transcripts</li>
                 </ul>
             </div>
 
-            <!-- User Management Card -->
-            <div class="card">
-                <h2>User Management</h2>
+            <div class="card" onclick="window.location.href='{{ url_for('admin_teacher_attendance') }}'">
+                <h2>Attendance</h2>
                 <ul>
-                    <li>Add / Remove Users</li>
-                    <li>Assign Roles</li>
-                    <li>Manage Credentials</li>
+                    <li>Teacher Attendance</li>
+                    <li>Review class and teacher attendance</li>
                 </ul>
             </div>
 
-            <!-- System Reports Card -->
-            <div class="card">
-                <h2>System Reports</h2>
+            <div class="card" onclick="window.location.href='{{ url_for('add_admin') }}'">
+                <h2>Admins</h2>
                 <ul>
-                    <li>Generate Attendance Reports</li>
-                    <li>Fee Collection Reports</li>
-                    <li>Course Enrollment Reports</li>
+                    <li>Create Admin</li>
+                    <li>Make new admin credentials</li>
                 </ul>
             </div>
 

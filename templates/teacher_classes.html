@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Teacher Classes</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}">
+</head>
+<body>
+
+    <div class="dashboard-header">
+        My Classes
+    </div>
+
+    <div class="dashboard-container">
+        <div class="card" style="width: 100%; padding: 24px; overflow-x:auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f7f8fb; text-align: left;">
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Class Name</th>
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Semester</th>
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Year</th>
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Department</th>
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Courses</th>
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for assignment in assignments %}
+                    <tr>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ assignment.class_name }}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ assignment.semester }}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ assignment.year }}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ assignment.class_department }}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ assignment.course_name }} ({{ assignment.course_code }})</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6; white-space: nowrap; gap: 8px; display:flex; flex-wrap:wrap;">
+                            <a href="{{ url_for('teacher_class_students', id=assignment.class_id) }}" class="badge" style="background-color:#1f4fd8;">View Students</a>
+                            <a href="{{ url_for('teacher_class_assignments', id=assignment.class_id) }}" class="badge" style="background-color:#00bfa6;">Assignments</a>
+                            <a href="{{ url_for('teacher_class_attendance', id=assignment.class_id) }}" class="badge" style="background-color:#ffb300;">Attendance</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="padding: 24px; text-align: center; color: #555;">No assigned classes yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="dashboard-footer">
+        Copyright Agriculture University of Faisalabad | Teacher - Class View
+    </div>
+
+</body>
+</html>

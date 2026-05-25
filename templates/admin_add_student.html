@@ -35,6 +35,15 @@
                         </select>
                     </li>
                     <li><input type="text" name="degree_type" placeholder="Degree Type (e.g. Software Engineering)" required></li>
+                    <li>
+                        <label for="class_id">Assign Class</label>
+                        <select id="class_id" name="class_id" style="width:100%; padding: 10px; border-radius: 8px; border: 1px solid #c8c8c8;">
+                            <option value="">No class assigned</option>
+                            {% for class_row in classes %}
+                                <option value="{{ class_row.id }}">{{ class_row.name }} - {{ class_row.semester }} {{ class_row.year }}</option>
+                            {% endfor %}
+                        </select>
+                    </li>
                     <li><input type="text" name="department" placeholder="Department" required></li>
                     <li>
                         <select name="fee_status" required>

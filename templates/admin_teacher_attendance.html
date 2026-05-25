@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Teacher Attendance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}">
+</head>
+<body>
+
+    <div class="dashboard-header">
+        Teacher Attendance Management
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div style="max-width: 960px; margin: 16px auto; padding: 12px;">
+            {% for category, message in messages %}
+                <div style="margin-bottom: 10px; padding: 14px 16px; border-radius: 8px; background: {% if category == 'success' %}#e8f5e9{% elif category == 'danger' %}#ffebee{% elif category == 'warning' %}#fff8e1{% else %}#e3f2fd{% endif %}; color: #202124; border: 1px solid {% if category == 'success' %}#c8e6c9{% elif category == 'danger' %}#ffcdd2{% elif category == 'warning' %}#ffecb3{% else %}#bbdefb{% endif %};">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="dashboard-container">
+
+        <div class="card" style="max-width: 960px; margin: auto; padding: 24px;">
+            <h2>Record Teacher Attendance</h2>
+            <form method="post" style="display: grid; gap: 18px;">
+                <div>
+                    <label for="teacher_id">Teacher</label>
+                    <select id="teacher_id" name="teacher_id" required style="width:100%; padding:10px; border-radius:8px; border:1px solid #c8c8c8;">
+                        <option value="">Select Teacher</option>
+                        {% for teacher in teachers %}
+                            <option value="{{ teacher.id }}">{{ teacher.name }} ({{ teacher.reg_id }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="date">Date</label>
+                    <input type="date" id="date" name="date" required style="width:100%; padding:10px; border-radius:8px; border:1px solid #c8c8c8;">
+                </div>
+                <div>
+                    <label for="status">Status</label>
+                    <select id="status" name="status" required style="width:100%; padding:10px; border-radius:8px; border:1px solid #c8c8c8;">
+                        <option value="Present">Present</option>
+                        <option value="Absent">Absent</option>
+                        <option value="Leave">Leave</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="notes">Notes</label>
+                    <textarea id="notes" name="notes" rows="3" style="width:100%; padding:10px; border-radius:8px; border:1px solid #c8c8c8;"></textarea>
+                </div>
+                <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                    <button type="submit" class="badge" style="background-color:#1f4fd8;">Save Attendance</button>
+                    <a href="{{ url_for('admin_dashboard') }}" class="badge" style="background-color:#757575;">Back to Dashboard</a>
+                </div>
+            </form>
+        </div>
+
+        <div class="card" style="max-width: 960px; margin: auto; padding: 24px; margin-top: 24px; overflow-x:auto;">
+            <h2>Recent Teacher Attendance</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f7f8fb; text-align: left;">
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Teacher</th>
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Date</th>
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Status</th>
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ record.teacher_name }} ({{ record.reg_id }})</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ record.date }}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ record.status }}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ record.notes }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" style="padding: 24px; text-align: center; color: #555;">No teacher attendance records found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <div class="dashboard-footer">
+        © Agriculture University of Faisalabad | Teacher Attendance
+    </div>
+
+</body>
+</html>

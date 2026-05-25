@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Teacher Feedback</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}">
+</head>
+<body>
+
+    <div class="dashboard-header">
+        Feedback
+    </div>
+
+    <div class="dashboard-container">
+        <div class="card" style="width: 100%; padding: 24px;">
+            <h2>Welcome, {{ teacher.name }}</h2>
+            <p>This page is reserved for feedback, announcements, and teacher notes.</p>
+            <p>Use the teacher dashboard navigation to review assigned classes and student results.</p>
+        </div>
+    </div>
+
+    <div class="dashboard-footer">
+        Copyright Agriculture University of Faisalabad | Teacher Feedback
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Course Assignments</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}">
+</head>
+<body>
+    <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; padding-right: 24px;">
+        <div>Assignments: {{ course.name }} ({{ course.code }})</div>
+        <a href="{{ url_for('student_dashboard') }}" class="badge" style="background-color: #ffffff; color: #1f4fd8; text-decoration: none;">Back to Dashboard</a>
+    </div>
+
+    <div class="dashboard-container">
+        <div class="card" style="width: 100%; padding: 24px;">
+            <h2>Assigned Tasks</h2>
+            {% if assignments %}
+                <div style="display: grid; gap: 16px; margin-top: 15px;">
+                    {% for assignment in assignments %}
+                    <div style="border: 1px solid #e0e0e0; padding: 16px; border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <h3 style="color: #1f4fd8; margin-bottom: 8px;">{{ assignment.title }}</h3>
+                            <span class="badge" style="background-color: #757575;">Due: {{ assignment.due_date }}</span>
+                        </div>
+                        <p style="font-size: 14px; color: #555; line-height: 1.5;">{{ assignment.description }}</p>
+                        <div style="margin-top: 12px; font-size: 12px; color: #999;">
+                            Posted on: {{ assignment.created_at }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p style="margin-top: 15px;">No assignments found for this course.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="dashboard-footer">
+        © Agriculture University of Faisalabad | Student Assignments
+    </div>
+</body>
+</html>

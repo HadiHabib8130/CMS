@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Class Attendance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}">
+</head>
+<body>
+
+    <div class="dashboard-header">
+        Class Attendance
+    </div>
+
+    <div class="dashboard-container">
+        <div class="card" style="max-width: 960px; margin: auto; padding: 24px;">
+            <h2>Mark Attendance</h2>
+            <form method="post" style="display: grid; gap: 18px;">
+                <div>
+                    <label for="course_id">Course</label>
+                    <select id="course_id" name="course_id" required style="width:100%; padding:10px; border-radius:8px; border:1px solid #c8c8c8;">
+                        <option value="">Select course</option>
+                        {% for course in courses %}
+                        <option value="{{ course.id }}">{{ course.name }} ({{ course.code }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="date">Date</label>
+                    <input type="date" id="date" name="date" required style="width:100%; padding:10px; border-radius:8px; border:1px solid #c8c8c8;">
+                </div>
+                <div>
+                    <p style="font-weight:600;">Students Present</p>
+                    <div style="display:grid; gap:12px; max-height:320px; overflow:auto; padding-right:10px;">
+                        {% for student in students %}
+                        <label style="display:flex; align-items:center; gap:10px;">
+                            <input type="checkbox" name="present_student" value="{{ student.id }}">
+                            {{ student.name }} ({{ student.reg_id }})
+                        </label>
+                        {% endfor %}
+                        {% if not students %}
+                        <p>No students assigned to this class.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                    <button type="submit" class="badge" style="background-color:#1f4fd8;">Save Attendance</button>
+                    <a href="{{ url_for('teacher_classes') }}" class="badge" style="background-color:#757575;">Back to Classes</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="dashboard-footer">
+        © Agriculture University of Faisalabad | Class Attendance
+    </div>
+
+</body>
+</html>

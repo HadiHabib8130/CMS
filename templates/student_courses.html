@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Courses</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}">
+</head>
+<body>
+
+    <div class="dashboard-header">
+        My Courses
+    </div>
+
+    <div class="dashboard-container">
+        <div class="card" style="width: 100%; padding: 24px; overflow-x:auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f7f8fb; text-align: left;">
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Course Name</th>
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Code</th>
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Credit Hours</th>
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Theory Hours</th>
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Practical Hours</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for course in courses %}
+                    <tr>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ course.name }}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ course.code }}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ course.credit_hours }}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ course.theory_hours }}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ course.practical_hours }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="padding: 24px; text-align: center; color: #555;">No courses assigned.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="dashboard-footer">
+        Copyright Agriculture University of Faisalabad | Student Courses
+    </div>
+
+</body>
+</html>

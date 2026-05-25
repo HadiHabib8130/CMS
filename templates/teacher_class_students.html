@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Class Students</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}">
+</head>
+<body>
+
+    <div class="dashboard-header">
+        Class Students
+    </div>
+
+    <div class="dashboard-container">
+        <div class="card" style="width: 100%; padding: 24px;">
+            <h3>Courses Assigned</h3>
+            <ul style="margin-bottom: 24px;">
+                {% for course in courses %}
+                    <li>{{ course.name }} ({{ course.code }})</li>
+                {% else %}
+                    <li>No courses assigned.</li>
+                {% endfor %}
+            </ul>
+
+            <div style="overflow-x:auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f7f8fb; text-align: left;">
+                            <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Name</th>
+                            <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Reg ID</th>
+                            <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Program</th>
+                            <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Department</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ student.name }}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ student.reg_id }}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ student.program }}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ student.department }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" style="padding: 24px; text-align: center; color: #555;">No students found for this class.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <a href="{{ url_for('teacher_classes') }}" class="badge" style="background-color:#757575; margin-top: 20px; display: inline-block;">Back to Classes</a>
+        </div>
+    </div>
+
+    <div class="dashboard-footer">
+        Copyright Agriculture University of Faisalabad | Teacher - Class Students
+    </div>
+
+</body>
+</html>

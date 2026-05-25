@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Course Attendance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}">
+</head>
+<body>
+    <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; padding-right: 24px;">
+        <div>Attendance: {{ course.name }} ({{ course.code }})</div>
+        <a href="{{ url_for('student_dashboard') }}" class="badge" style="background-color: #ffffff; color: #1f4fd8; text-decoration: none;">Back to Dashboard</a>
+    </div>
+
+    <div class="dashboard-container">
+        <div class="card" style="width: 100%; padding: 24px;">
+            <h2>Attendance History</h2>
+            {% if attendance %}
+                <div style="overflow-x:auto; margin-top: 15px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f7f8fb; text-align: left;">
+                                <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Date</th>
+                                <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in attendance %}
+                            <tr>
+                                <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ record.date }}</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">
+                                    <span class="badge" style="background-color: {% if record.status == 'Present' %}#00bfa6{% else %}#ff5252{% endif %};">
+                                        {{ record.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p style="margin-top: 15px;">No attendance records found for this course.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="dashboard-footer">
+        © Agriculture University of Faisalabad | Student Attendance
+    </div>
+</body>
+</html>

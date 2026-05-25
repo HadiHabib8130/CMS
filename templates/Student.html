@@ -3,74 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <title>Student Dashboard</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}"></head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}">
+</head>
 <body>
 
-    <!-- Header -->
-    <div class="dashboard-header">
-        Student Dashboard
+    <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; padding-right: 24px;">
+        <div>Student Dashboard</div>
+        <a href="{{ url_for('logout') }}" class="badge" style="background-color: #ff5252; color: white; text-decoration: none;">Logout</a>
     </div>
 
-    <!-- Main Container -->
     <div class="dashboard-container">
 
-        <div class="cards">
-
-            <!-- Personal Info Card -->
+        <div class="cards" style="gap: 20px;">
             <div class="card">
                 <h2>Personal Info</h2>
                 <ul>
-                    <li>Name: John Doe</li>
-                    <li>Program: Undergraduate <span class="badge">UG</span></li>
-                    <li>Roll No: 12345</li>
+                    <li><strong>Name:</strong> {{ student.name }}</li>
+                    <li><strong>Reg ID:</strong> {{ student.reg_id or 'N/A' }}</li>
+                    <li><strong>Degree:</strong> {{ student.degree or 'N/A' }}</li>
+                    <li><strong>Program:</strong> {{ student.program or 'N/A' }}</li>
+                    <li><strong>Department:</strong> {{ student.department or 'N/A' }}</li>
                 </ul>
             </div>
 
-            <!-- Courses Card -->
             <div class="card">
-                <h2>Courses Enrolled</h2>
+                <h2>Academic Overview</h2>
                 <ul>
-                    <li>Math 101</li>
-                    <li>Physics 102</li>
-                    <li>Agriculture 201</li>
+                    <li><strong>Courses Enrolled:</strong> {{ total_courses }}</li>
+                    <li><strong>Result Records:</strong> {{ total_results }}</li>
+                    <li><strong>Fee Records:</strong> {{ total_fees }}</li>
                 </ul>
+                <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+                    <a href="{{ url_for('student_results') }}" class="badge">View Results</a>
+                    <a href="{{ url_for('student_fees') }}" class="badge">View Fees</a>
+                </div>
             </div>
 
-            <!-- Attendance Card -->
             <div class="card">
-                <h2>Attendance</h2>
+                <h2>Fee Summary</h2>
                 <ul>
-                    <li>Overall Attendance: 85%</li>
-                    <li>Math 101: 90%</li>
-                    <li>Physics 102: 82%</li>
+                    <li><strong>Pending Fees:</strong> {{ pending_fees }}</li>
+                    <li><strong>Amount Due:</strong> Rs {{ '%.2f'|format(due_amount) }}</li>
+                    <li><strong>Amount Paid:</strong> Rs {{ '%.2f'|format(paid_amount) }}</li>
                 </ul>
             </div>
 
-            <!-- Grades Card -->
             <div class="card">
-                <h2>Grades</h2>
-                <ul>
-                    <li>Math 101: A</li>
-                    <li>Physics 102: B+</li>
-                    <li>Agriculture 201: A-</li>
-                </ul>
+                <h2>Latest Grades</h2>
+                {% if results %}
+                    <ul>
+                        {% for result in results[:4] %}
+                        <li>{{ result.course_id }}: {{ result.grade or 'N/A' }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No grade records available yet.</p>
+                {% endif %}
             </div>
+        </div>
 
-            <!-- Fee Status Card -->
-            <div class="card">
-                <h2>Fee Status</h2>
-                <ul>
-                    <li>Semester 1: Paid <span class="badge">✔</span></li>
-                    <li>Semester 2: Unpaid <span class="badge" style="background-color:#ff5252;">✖</span></li>
-                    <li>Semester 3: Paid <span class="badge">✔</span></li>
-                </ul>
-            </div>
-
+        <div class="card" style="width: 100%; padding: 24px; margin-top: 20px;">
+            <h2>Enrolled Courses</h2>
+            {% if courses %}
+                <div style="overflow-x:auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f7f8fb; text-align: left;">
+                                <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Course</th>
+                                <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Code</th>
+                                <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Credits</th>
+                                <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Theory/Practical</th>
+                                <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for course in courses %}
+                            <tr>
+                                <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ course.name }}</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ course.code }}</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ course.credit_hours or 'N/A' }}</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ course.theory_hours or 0 }}/{{ course.practical_hours or 0 }}</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #e6e6e6; white-space: nowrap;">
+                                    <a href="{{ url_for('student_course_attendance', course_id=course.id) }}" class="badge" style="background-color: #1f4fd8; text-decoration: none;">View Attendance</a>
+                                    <a href="{{ url_for('student_course_assignments', course_id=course.id) }}" class="badge" style="background-color: #00bfa6; text-decoration: none;">View Assignments</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p>No enrolled courses found.</p>
+            {% endif %}
         </div>
 
     </div>
 
-    <!-- Footer -->
     <div class="dashboard-footer">
         © Agriculture University of Faisalabad | Student Dashboard
     </div>

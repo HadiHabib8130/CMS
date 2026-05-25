@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Dashboardstyle.css') }}">
+</head>
+<body>
+
+    <div class="dashboard-header">
+        My Results
+    </div>
+
+    <div class="dashboard-container">
+        <div class="card" style="width: 100%; padding: 24px; overflow-x:auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f7f8fb; text-align: left;">
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Course</th>
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Code</th>
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Grade</th>
+                        <th style="padding: 14px 12px; border-bottom: 1px solid #e0e0e0;">Marks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results %}
+                    <tr>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ result.course_name }}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ result.course_code }}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ result.grade }}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #e6e6e6;">{{ result.marks_obtained }}/{{ result.total_marks }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" style="padding: 24px; text-align: center; color: #555;">No results recorded yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="dashboard-footer">
+        Copyright Agriculture University of Faisalabad | Student Results
+    </div>
+
+</body>
+</html>
