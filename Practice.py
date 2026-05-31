@@ -196,17 +196,17 @@ def init_db():
     )
     db.commit()
 
-    add_column_if_missing("students", "reg_id", "reg_id TEXT")
-    add_column_if_missing("teachers", "reg_id", "reg_id TEXT")
-    add_column_if_missing("teachers", "email", "email TEXT")
-    add_column_if_missing("teachers", "phone", "phone TEXT")
-    add_column_if_missing("teachers", "qualification", "qualification TEXT")
-    add_column_if_missing("teachers", "specialization", "specialization TEXT")
-    add_column_if_missing("courses", "code", "code TEXT UNIQUE")
-    add_column_if_missing("courses", "credit_hours", "credit_hours INTEGER")
-    add_column_if_missing("courses", "theory_hours", "theory_hours INTEGER")
-    add_column_if_missing("courses", "practical_hours", "practical_hours INTEGER")
-    add_column_if_missing("courses", "department", "department TEXT")
+    add_column_if_missing(cursor, "students", "reg_id", "TEXT")
+    add_column_if_missing(cursor, "teachers", "reg_id", "TEXT")
+    add_column_if_missing(cursor, "teachers", "email", "TEXT")
+    add_column_if_missing(cursor, "teachers", "phone", "TEXT")
+    add_column_if_missing(cursor, "teachers", "qualification", "TEXT")
+    add_column_if_missing(cursor, "teachers", "specialization", "TEXT")
+    add_column_if_missing(cursor, "courses", "code", "TEXT UNIQUE")
+    add_column_if_missing(cursor, "courses", "credit_hours", "INTEGER")
+    add_column_if_missing(cursor, "courses", "theory_hours", "INTEGER")
+    add_column_if_missing(cursor, "courses", "practical_hours", "INTEGER")
+    add_column_if_missing(cursor, "courses", "department", "TEXT")
     cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_students_reg_id ON students(reg_id)")
     cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_teachers_reg_id ON teachers(reg_id)")
     cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_courses_code ON courses(code)")
@@ -216,7 +216,7 @@ def init_db():
     if cursor.fetchone()[0] == 0:
         default_admin_password = generate_password_hash("Admin@123")
         cursor.execute(
-            "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+            "INSERT INTO users (username, password, role) VALUES (%s, %s, %s)",
             ("admin", default_admin_password, "admin")
         )
         db.commit()
@@ -228,6 +228,8 @@ def generate_temp_password(length=10):
 
 
 def generate_reg_id(role):
+    db = get_db()
+    cursor = db.cursor()
     year = datetime.now().year
     if role == 'student':
         cursor.execute("SELECT COUNT(*) FROM students")
@@ -1053,7 +1055,7 @@ def teacher_dashboard():
         student_count = 0
         if class_ids:
             cursor.execute(
-                "SELECT COUNT(DISTINCT id) FROM students WHERE class_id IN ({seq})".format(seq=','.join('?'*len(class_ids))),
+                "SELECT COUNT(DISTINCT id) FROM students WHERE class_id IN ({seq})".format(seq=','.join('%s'*len(class_ids))),
                 tuple(class_ids)
             )
             student_count = cursor.fetchone()[0]
@@ -1255,7 +1257,7 @@ def teacher_results():
         class_ids = [row['class_id'] for row in assignments]
         if class_ids:
             cursor.execute(
-                "SELECT * FROM students WHERE class_id IN ({seq})".format(seq=','.join('?'*len(class_ids))),
+                "SELECT * FROM students WHERE class_id IN ({seq})".format(seq=','.join('%s'*len(class_ids))),
                 tuple(class_ids)
             )
             students = cursor.fetchall()
@@ -1265,7 +1267,7 @@ def teacher_results():
         course_ids = [row['course_id'] for row in assignments]
         if course_ids:
             cursor.execute(
-                "SELECT * FROM courses WHERE id IN ({seq})".format(seq=','.join('?'*len(course_ids))),
+                "SELECT * FROM courses WHERE id IN ({seq})".format(seq=','.join('%s'*len(course_ids))),
                 tuple(course_ids)
             )
             courses = cursor.fetchall()
