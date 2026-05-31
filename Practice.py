@@ -29,7 +29,7 @@ def add_column_if_missing(cursor, table, column_name, column_definition):
         (table, column_name)
     )
     if not cursor.fetchone():
-        cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column_definition}")
+        cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column_name} {column_definition}")
 
 def table_exists(cursor, name):
     cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = %s)", (name,))
@@ -1283,7 +1283,7 @@ def teacher_results():
                 JOIN students s ON r.student_id = s.id
                 JOIN courses co ON r.course_id = co.id
                 WHERE r.student_id IN ({seq})
-                """.format(seq=','.join('?'*len(student_ids))),
+                """.format(seq=','.join('%s'*len(student_ids))),
                 tuple(student_ids)
             )
             teacher_results = cursor.fetchall()
