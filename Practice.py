@@ -1,40 +1,47 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, g
 import os
-import sqlite3
+import psycopg2
+from psycopg2.extras import DictCursor
 import secrets
 import string
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.secret_key = "cms_fyp_secret_key_123"
+app.secret_key = os.environ.get("SECRET_KEY", "cms_fyp_secret_key_123")
 
-DATABASE = os.path.join(os.path.dirname(__file__), "cms_db.sqlite")
+def get_db():
+    if 'db' not in g:
+        # Vercel provides POSTGRES_URL when you add the Postgres integration
+        db_url = os.environ.get('POSTGRES_URL') or os.environ.get('DATABASE_URL')
+        g.db = psycopg2.connect(db_url, cursor_factory=DictCursor)
+    return g.db
 
-# Connect to SQLite and initialize schema
-db = sqlite3.connect(DATABASE, check_same_thread=False)
-db.row_factory = sqlite3.Row
-cursor = db.cursor()
-# Enable foreign key support for cascading cleanup if needed
-cursor.execute('PRAGMA foreign_keys = ON')
+@app.teardown_appcontext
+def close_db(error):
+    db = g.pop('db', None)
+    if db is not None:
+        db.close()
 
-def add_column_if_missing(table, column_name, column_definition):
-    cursor.execute(f"PRAGMA table_info({table})")
-    existing = [row[1] for row in cursor.fetchall()]
-    if column_name not in existing:
+def add_column_if_missing(cursor, table, column_name, column_definition):
+    cursor.execute(
+        "SELECT column_name FROM information_schema.columns WHERE table_name=%s AND column_name=%s",
+        (table, column_name)
+    )
+    if not cursor.fetchone():
         cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column_definition}")
 
-
-def table_exists(name):
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (name,))
-    return cursor.fetchone() is not None
-
+def table_exists(cursor, name):
+    cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = %s)", (name,))
+    return cursor.fetchone()[0]
 
 def init_db():
+    db = get_db()
+    cursor = db.cursor()
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
             role TEXT NOT NULL
@@ -44,7 +51,7 @@ def init_db():
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS students (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             name TEXT NOT NULL,
             roll_no TEXT UNIQUE,
             degree TEXT,
@@ -61,7 +68,7 @@ def init_db():
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS teachers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             name TEXT NOT NULL,
             email TEXT,
             phone TEXT,
@@ -74,12 +81,13 @@ def init_db():
         )
         """
     )
-    if table_exists('subjects') and not table_exists('courses'):
+    if table_exists(cursor, 'subjects') and not table_exists(cursor, 'courses'):
         cursor.execute("ALTER TABLE subjects RENAME TO courses")
+
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS courses (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             name TEXT NOT NULL,
             code TEXT UNIQUE,
             credit_hours INTEGER,
@@ -92,7 +100,7 @@ def init_db():
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS classes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             name TEXT NOT NULL,
             semester TEXT,
             year INTEGER,
@@ -100,35 +108,11 @@ def init_db():
         )
         """
     )
-    if table_exists('class_subjects'):
-        cursor.execute("PRAGMA table_info(class_subjects)")
-        class_subjects_info = [row[1] for row in cursor.fetchall()]
-        if 'subject_id' in class_subjects_info and 'course_id' not in class_subjects_info:
-            cursor.execute("ALTER TABLE class_subjects RENAME TO class_subjects_old")
-            cursor.execute(
-                """
-                CREATE TABLE class_subjects (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    class_id INTEGER,
-                    course_id INTEGER,
-                    teacher_id INTEGER,
-                    FOREIGN KEY(class_id) REFERENCES classes(id),
-                    FOREIGN KEY(course_id) REFERENCES courses(id),
-                    FOREIGN KEY(teacher_id) REFERENCES teachers(id)
-                )
-                """
-            )
-            cursor.execute(
-                "INSERT INTO class_subjects (id, class_id, course_id, teacher_id) "
-                "SELECT id, class_id, subject_id, teacher_id FROM class_subjects_old"
-            )
-            cursor.execute("DROP TABLE class_subjects_old")
-            db.commit()
 
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS class_subjects (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             class_id INTEGER,
             course_id INTEGER,
             teacher_id INTEGER,
@@ -139,37 +123,10 @@ def init_db():
         """
     )
 
-    if table_exists('results'):
-        cursor.execute("PRAGMA table_info(results)")
-        results_info = [row[1] for row in cursor.fetchall()]
-        if 'subject_id' in results_info and 'course_id' not in results_info:
-            cursor.execute("ALTER TABLE results RENAME TO results_old")
-            cursor.execute(
-                """
-                CREATE TABLE results (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    student_id INTEGER,
-                    course_id INTEGER,
-                    grade TEXT,
-                    marks_obtained REAL,
-                    total_marks REAL,
-                    term TEXT,
-                    FOREIGN KEY(student_id) REFERENCES students(id),
-                    FOREIGN KEY(course_id) REFERENCES courses(id)
-                )
-                """
-            )
-            cursor.execute(
-                "INSERT INTO results (id, student_id, course_id, grade, marks_obtained, total_marks, term) "
-                "SELECT id, student_id, subject_id, grade, marks_obtained, total_marks, term FROM results_old"
-            )
-            cursor.execute("DROP TABLE results_old")
-            db.commit()
-
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS results (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             student_id INTEGER,
             course_id INTEGER,
             grade TEXT,
@@ -184,7 +141,7 @@ def init_db():
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS fees (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             student_id INTEGER,
             semester TEXT,
             amount_due REAL,
@@ -198,7 +155,7 @@ def init_db():
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS assignments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             class_id INTEGER,
             teacher_id INTEGER,
             title TEXT,
@@ -213,7 +170,7 @@ def init_db():
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS class_attendance (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             class_id INTEGER,
             student_id INTEGER,
             course_id INTEGER,
@@ -228,7 +185,7 @@ def init_db():
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS teacher_attendance (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             teacher_id INTEGER,
             date TEXT,
             status TEXT,
@@ -297,22 +254,28 @@ def split_degree(degree_text):
 
 
 def get_teacher_by_username(username):
+    db = get_db()
+    cursor = db.cursor()
     cursor.execute(
-        "SELECT t.* FROM teachers t JOIN users u ON t.user_id=u.id WHERE u.username=?",
+        "SELECT t.* FROM teachers t JOIN users u ON t.user_id=u.id WHERE u.username=%s",
         (username,)
     )
     return cursor.fetchone()
 
 
 def get_student_by_username(username):
+    db = get_db()
+    cursor = db.cursor()
     cursor.execute(
-        "SELECT s.* FROM students s JOIN users u ON s.user_id=u.id WHERE u.username=?",
+        "SELECT s.* FROM students s JOIN users u ON s.user_id=u.id WHERE u.username=%s",
         (username,)
     )
     return cursor.fetchone()
 
 
 def get_teacher_assignments(teacher_id):
+    db = get_db()
+    cursor = db.cursor()
     cursor.execute(
         """
         SELECT cs.*, cl.name AS class_name, cl.semester, cl.year, cl.department AS class_department,
@@ -320,7 +283,7 @@ def get_teacher_assignments(teacher_id):
         FROM class_subjects cs
         JOIN classes cl ON cs.class_id = cl.id
         JOIN courses co ON cs.course_id = co.id
-        WHERE cs.teacher_id = ?
+        WHERE cs.teacher_id = %s
         """,
         (teacher_id,)
     )
@@ -328,24 +291,25 @@ def get_teacher_assignments(teacher_id):
 
 
 def get_student_courses(student_id):
+    db = get_db()
+    cursor = db.cursor()
     cursor.execute(
         """
         SELECT co.* FROM class_subjects cs
         JOIN courses co ON cs.course_id = co.id
         WHERE cs.class_id = (
-            SELECT class_id FROM students WHERE id = ?
+            SELECT class_id FROM students WHERE id = %s
         )
         """,
         (student_id,)
     )
     return cursor.fetchall()
 
-
-init_db()
-
 # Home route redirects to login
 @app.route('/')
 def home():
+    with app.app_context():
+        init_db()
     return redirect(url_for('login'))
 
 # Signup route is disabled for public access; admin creates accounts
@@ -357,11 +321,13 @@ def signup():
 # Login route
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    db = get_db()
+    cursor = db.cursor()
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
 
-        cursor.execute("SELECT * FROM users WHERE username=?", (username,))
+        cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
         account = cursor.fetchone()
 
         if account and check_password_hash(account['password'], password):
@@ -392,18 +358,20 @@ def admin_dashboard():
 # Add new admin
 @app.route('/admin/add_admin', methods=['GET', 'POST'])
 def add_admin():
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
         if request.method == 'POST':
             username = request.form['username']
             password = request.form['password']
 
-            cursor.execute("SELECT * FROM users WHERE username=?", (username,))
+            cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
             if cursor.fetchone():
                 flash("Username already exists!", "danger")
             else:
                 hashed_password = generate_password_hash(password)
                 cursor.execute(
-                    "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+                    "INSERT INTO users (username, password, role) VALUES (%s, %s, %s)",
                     (username, hashed_password, 'admin')
                 )
                 db.commit()
@@ -418,13 +386,15 @@ def add_admin():
 # View all students
 @app.route('/admin/students')
 def view_students():
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
         search = request.args.get('q', '').strip()
         if search:
             pattern = f"%{search}%"
             cursor.execute(
                 "SELECT s.*, c.name AS class_name FROM students s LEFT JOIN classes c ON s.class_id=c.id "
-                "WHERE s.name LIKE ? OR s.reg_id LIKE ? OR s.degree LIKE ? OR s.program LIKE ? OR s.department LIKE ? OR c.name LIKE ?",
+                "WHERE s.name LIKE %s OR s.reg_id LIKE %s OR s.degree LIKE %s OR s.program LIKE %s OR s.department LIKE %s OR c.name LIKE %s",
                 (pattern, pattern, pattern, pattern, pattern, pattern)
             )
         else:
@@ -437,6 +407,8 @@ def view_students():
 # Add new student
 @app.route('/admin/students/add', methods=['GET', 'POST'])
 def add_student():
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
         cursor.execute("SELECT id, name FROM classes ORDER BY name")
         classes = cursor.fetchall()
@@ -457,14 +429,13 @@ def add_student():
             hashed_password = generate_password_hash(temp_password)
 
             cursor.execute(
-                "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+                "INSERT INTO users (username, password, role) VALUES (%s, %s, %s) RETURNING id",
                 (username, hashed_password, 'student')
             )
-            user_id = cursor.lastrowid
+            user_id = cursor.fetchone()[0]
 
             cursor.execute(
-                "INSERT INTO students (user_id, reg_id, name, degree, program, department, fee_status, father_name, class_id) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO students (user_id, reg_id, name, degree, program, department, fee_status, father_name, class_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 (user_id, reg_id, name, degree, program, department, fee_status, father_name, class_id)
             )
             db.commit()
@@ -477,8 +448,10 @@ def add_student():
 # Edit student
 @app.route('/admin/students/edit/<int:id>', methods=['GET', 'POST'])
 def edit_student(id):
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
-        cursor.execute("SELECT * FROM students WHERE id=?", (id,))
+        cursor.execute("SELECT * FROM students WHERE id=%s", (id,))
         student = cursor.fetchone()
         if not student:
             flash("Student not found!", "danger")
@@ -500,12 +473,12 @@ def edit_student(id):
             new_password = request.form.get('new_password', '').strip()
 
             cursor.execute(
-                "UPDATE students SET name=?, degree=?, program=?, department=?, fee_status=?, father_name=?, class_id=? WHERE id= ?",
+                "UPDATE students SET name=%s, degree=%s, program=%s, department=%s, fee_status=%s, father_name=%s, class_id=%s WHERE id= %s",
                 (name, degree, program, department, fee_status, father_name, class_id, id)
             )
             if new_password and student['user_id']:
                 hashed_password = generate_password_hash(new_password)
-                cursor.execute("UPDATE users SET password=? WHERE id=?", (hashed_password, student['user_id']))
+                cursor.execute("UPDATE users SET password=%s WHERE id=%s", (hashed_password, student['user_id']))
             db.commit()
             flash("Student updated successfully!" + (" Password changed." if new_password else ""), "success")
             return redirect(url_for('view_students'))
@@ -518,14 +491,16 @@ def edit_student(id):
 # Delete student
 @app.route('/admin/students/delete/<int:id>', methods=['POST'])
 def delete_student(id):
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
-        cursor.execute("SELECT user_id FROM students WHERE id=?", (id,))
+        cursor.execute("SELECT user_id FROM students WHERE id=%s", (id,))
         student = cursor.fetchone()
         if student:
             user_id = student['user_id']
-            cursor.execute("DELETE FROM students WHERE id=?", (id,))
+            cursor.execute("DELETE FROM students WHERE id=%s", (id,))
             if user_id:
-                cursor.execute("DELETE FROM users WHERE id=?", (user_id,))
+                cursor.execute("DELETE FROM users WHERE id=%s", (user_id,))
             db.commit()
             flash("Student deleted successfully!", "success")
         else:
@@ -537,12 +512,14 @@ def delete_student(id):
 # Teacher management
 @app.route('/admin/teachers')
 def view_teachers():
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
         search = request.args.get('q', '').strip()
         if search:
             pattern = f"%{search}%"
             cursor.execute(
-                "SELECT * FROM teachers WHERE name LIKE ? OR reg_id LIKE ? OR email LIKE ? OR department LIKE ? OR title LIKE ? OR specialization LIKE ?",
+                "SELECT * FROM teachers WHERE name LIKE %s OR reg_id LIKE %s OR email LIKE %s OR department LIKE %s OR title LIKE %s OR specialization LIKE %s",
                 (pattern, pattern, pattern, pattern, pattern, pattern)
             )
         else:
@@ -555,6 +532,8 @@ def view_teachers():
 
 @app.route('/admin/teachers/add', methods=['GET', 'POST'])
 def add_teacher():
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
         cursor.execute("SELECT id, name, code FROM courses ORDER BY name")
         courses = cursor.fetchall()
@@ -574,13 +553,13 @@ def add_teacher():
             hashed_password = generate_password_hash(temp_password)
 
             cursor.execute(
-                "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+                "INSERT INTO users (username, password, role) VALUES (%s, %s, %s) RETURNING id",
                 (username, hashed_password, 'teacher')
             )
-            user_id = cursor.lastrowid
+            user_id = cursor.fetchone()[0]
 
             cursor.execute(
-                "INSERT INTO teachers (user_id, reg_id, name, email, phone, qualification, specialization, department, title) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO teachers (user_id, reg_id, name, email, phone, qualification, specialization, department, title) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 (user_id, reg_id, name, email, phone, qualification, specialization, department, title)
             )
             db.commit()
@@ -593,8 +572,10 @@ def add_teacher():
 
 @app.route('/admin/teachers/edit/<int:id>', methods=['GET', 'POST'])
 def edit_teacher(id):
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
-        cursor.execute("SELECT * FROM teachers WHERE id=?", (id,))
+        cursor.execute("SELECT * FROM teachers WHERE id=%s", (id,))
         teacher = cursor.fetchone()
         if not teacher:
             flash("Teacher not found!", "danger")
@@ -616,13 +597,13 @@ def edit_teacher(id):
             new_password = request.form.get('password')
 
             cursor.execute(
-                "UPDATE teachers SET name=?, email=?, phone=?, qualification=?, specialization=?, department=?, title=? WHERE id=?",
+                "UPDATE teachers SET name=%s, email=%s, phone=%s, qualification=%s, specialization=%s, department=%s, title=%s WHERE id=%s",
                 (name, email, phone, qualification, specialization, department, title, id)
             )
 
             if new_password:
                 hashed_password = generate_password_hash(new_password)
-                cursor.execute("UPDATE users SET password=? WHERE id=?", (hashed_password, teacher['user_id']))
+                cursor.execute("UPDATE users SET password=%s WHERE id=%s", (hashed_password, teacher['user_id']))
 
             db.commit()
             flash("Teacher updated successfully." + (" Password changed." if new_password else ""), "success")
@@ -640,14 +621,16 @@ def edit_teacher(id):
 
 @app.route('/admin/teachers/delete/<int:id>', methods=['POST'])
 def delete_teacher(id):
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
-        cursor.execute("SELECT user_id FROM teachers WHERE id=?", (id,))
+        cursor.execute("SELECT user_id FROM teachers WHERE id=%s", (id,))
         teacher = cursor.fetchone()
         if teacher:
             user_id = teacher['user_id']
-            cursor.execute("DELETE FROM teachers WHERE id=?", (id,))
+            cursor.execute("DELETE FROM teachers WHERE id=%s", (id,))
             if user_id:
-                cursor.execute("DELETE FROM users WHERE id=?", (user_id,))
+                cursor.execute("DELETE FROM users WHERE id=%s", (user_id,))
             db.commit()
             flash("Teacher deleted successfully!", "success")
         else:
@@ -659,12 +642,14 @@ def delete_teacher(id):
 
 @app.route('/admin/classes')
 def view_classes():
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
         search = request.args.get('q', '').strip()
         if search:
             pattern = f"%{search}%"
             cursor.execute(
-                "SELECT * FROM classes WHERE name LIKE ? OR semester LIKE ? OR department LIKE ?",
+                "SELECT * FROM classes WHERE name LIKE %s OR semester LIKE %s OR department LIKE %s",
                 (pattern, pattern, pattern)
             )
         else:
@@ -677,6 +662,8 @@ def view_classes():
 
 @app.route('/admin/classes/add', methods=['GET', 'POST'])
 def add_class():
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
         cursor.execute("SELECT id, name, code FROM courses ORDER BY name")
         courses = cursor.fetchall()
@@ -689,29 +676,29 @@ def add_class():
             department = request.form['department']
 
             cursor.execute(
-                "INSERT INTO classes (name, semester, year, department) VALUES (?, ?, ?, ?)",
+                "INSERT INTO classes (name, semester, year, department) VALUES (%s, %s, %s, %s) RETURNING id",
                 (name, semester, year, department)
             )
-            class_id = cursor.lastrowid
+            class_id = cursor.fetchone()[0]
 
             selected_courses = request.form.getlist('course_ids')
             for course_id in selected_courses:
-                course = cursor.execute("SELECT name FROM courses WHERE id=?", (course_id,)).fetchone()
+                cursor.execute("SELECT name FROM courses WHERE id=%s", (course_id,))
+                course = cursor.fetchone()
                 if not course:
                     continue
                 teacher_id = request.form.get(f'teacher_for_{course_id}') or None
                 if not teacher_id:
-                    db.rollback()
                     flash(f"Please assign a teacher for {course['name']}", "danger")
                     return render_template('admin_add_class.html', courses=courses, teachers=teachers)
-                teacher = cursor.execute("SELECT specialization FROM teachers WHERE id=?", (teacher_id,)).fetchone()
+                cursor.execute("SELECT specialization FROM teachers WHERE id=%s", (teacher_id,))
+                teacher = cursor.fetchone()
                 allowed = [item.strip() for item in (teacher['specialization'] or '').split(',') if item.strip()]
                 if course['name'] not in allowed:
-                    db.rollback()
                     flash(f"Teacher must specialize in {course['name']} to be assigned.", "danger")
                     return render_template('admin_add_class.html', courses=courses, teachers=teachers)
                 cursor.execute(
-                    "INSERT INTO class_subjects (class_id, course_id, teacher_id) VALUES (?, ?, ?)",
+                    "INSERT INTO class_subjects (class_id, course_id, teacher_id) VALUES (%s, %s, %s)",
                     (class_id, course_id, teacher_id)
                 )
             db.commit()
@@ -724,19 +711,14 @@ def add_class():
 
 @app.route('/admin/classes/edit/<int:id>', methods=['GET', 'POST'])
 def edit_class(id):
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
-        cursor.execute("SELECT * FROM classes WHERE id=?", (id,))
+        cursor.execute("SELECT * FROM classes WHERE id=%s", (id,))
         class_row = cursor.fetchone()
         if not class_row:
             flash("Class not found!", "danger")
             return redirect(url_for('view_classes'))
-
-        cursor.execute("SELECT id, name, code FROM courses ORDER BY name")
-        courses = cursor.fetchall()
-        cursor.execute("SELECT id, name, reg_id, specialization FROM teachers ORDER BY name")
-        teachers = cursor.fetchall()
-        cursor.execute("SELECT course_id, teacher_id FROM class_subjects WHERE class_id=?", (id,))
-        assigned = {row['course_id']: row['teacher_id'] for row in cursor.fetchall()}
 
         if request.method == 'POST':
             name = request.form['name']
@@ -745,34 +727,55 @@ def edit_class(id):
             department = request.form['department']
 
             cursor.execute(
-                "UPDATE classes SET name=?, semester=?, year=?, department=? WHERE id=?",
+                "UPDATE classes SET name=%s, semester=%s, year=%s, department=%s WHERE id=%s",
                 (name, semester, year, department, id)
             )
-            cursor.execute("DELETE FROM class_subjects WHERE class_id=?", (id,))
+            cursor.execute("DELETE FROM class_subjects WHERE class_id=%s", (id,))
             selected_courses = request.form.getlist('course_ids')
             for course_id in selected_courses:
-                course = cursor.execute("SELECT name FROM courses WHERE id=?", (course_id,)).fetchone()
+                cursor.execute("SELECT name FROM courses WHERE id=%s", (course_id,))
+                course = cursor.fetchone()
                 if not course:
                     continue
                 teacher_id = request.form.get(f'teacher_for_{course_id}') or None
                 if not teacher_id:
-                    db.rollback()
                     flash(f"Please assign a teacher for {course['name']}", "danger")
+                    # Refresh data before rendering
+                    cursor.execute("SELECT id, name, code FROM courses ORDER BY name")
+                    courses = cursor.fetchall()
+                    cursor.execute("SELECT id, name, reg_id, specialization FROM teachers ORDER BY name")
+                    teachers = cursor.fetchall()
+                    cursor.execute("SELECT course_id, teacher_id FROM class_subjects WHERE class_id=%s", (id,))
+                    assigned = {row['course_id']: row['teacher_id'] for row in cursor.fetchall()}
                     return render_template('admin_edit_class.html', class_row=class_row, courses=courses, teachers=teachers, assigned=assigned)
-                teacher = cursor.execute("SELECT specialization FROM teachers WHERE id=?", (teacher_id,)).fetchone()
+                
+                cursor.execute("SELECT specialization FROM teachers WHERE id=%s", (teacher_id,))
+                teacher = cursor.fetchone()
                 allowed = [item.strip() for item in (teacher['specialization'] or '').split(',') if item.strip()]
                 if course['name'] not in allowed:
-                    db.rollback()
                     flash(f"Teacher must specialize in {course['name']} to be assigned.", "danger")
+                    # Refresh data before rendering
+                    cursor.execute("SELECT id, name, code FROM courses ORDER BY name")
+                    courses = cursor.fetchall()
+                    cursor.execute("SELECT id, name, reg_id, specialization FROM teachers ORDER BY name")
+                    teachers = cursor.fetchall()
+                    cursor.execute("SELECT course_id, teacher_id FROM class_subjects WHERE class_id=%s", (id,))
+                    assigned = {row['course_id']: row['teacher_id'] for row in cursor.fetchall()}
                     return render_template('admin_edit_class.html', class_row=class_row, courses=courses, teachers=teachers, assigned=assigned)
                 cursor.execute(
-                    "INSERT INTO class_subjects (class_id, course_id, teacher_id) VALUES (?, ?, ?)",
+                    "INSERT INTO class_subjects (class_id, course_id, teacher_id) VALUES (%s, %s, %s)",
                     (id, course_id, teacher_id)
                 )
             db.commit()
             flash("Class updated successfully.", "success")
             return redirect(url_for('view_classes'))
 
+        cursor.execute("SELECT id, name, code FROM courses ORDER BY name")
+        courses = cursor.fetchall()
+        cursor.execute("SELECT id, name, reg_id, specialization FROM teachers ORDER BY name")
+        teachers = cursor.fetchall()
+        cursor.execute("SELECT course_id, teacher_id FROM class_subjects WHERE class_id=%s", (id,))
+        assigned = {row['course_id']: row['teacher_id'] for row in cursor.fetchall()}
         return render_template('admin_edit_class.html', class_row=class_row, courses=courses, teachers=teachers, assigned=assigned)
     flash("Unauthorized access!", "danger")
     return redirect(url_for('login'))
@@ -780,9 +783,11 @@ def edit_class(id):
 
 @app.route('/admin/classes/delete/<int:id>', methods=['POST'])
 def delete_class(id):
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
-        cursor.execute("DELETE FROM class_subjects WHERE class_id=?", (id,))
-        cursor.execute("DELETE FROM classes WHERE id=?", (id,))
+        cursor.execute("DELETE FROM class_subjects WHERE class_id=%s", (id,))
+        cursor.execute("DELETE FROM classes WHERE id=%s", (id,))
         db.commit()
         flash("Class deleted successfully!", "success")
         return redirect(url_for('view_classes'))
@@ -792,6 +797,8 @@ def delete_class(id):
 
 @app.route('/admin/fees')
 def view_fees():
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
         cursor.execute(
             "SELECT f.*, s.name AS student_name, s.reg_id FROM fees f JOIN students s ON f.student_id = s.id"
@@ -804,6 +811,8 @@ def view_fees():
 
 @app.route('/admin/fees/add', methods=['GET', 'POST'])
 def add_fee():
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
         cursor.execute("SELECT id, name, reg_id FROM students ORDER BY name")
         students = cursor.fetchall()
@@ -815,7 +824,7 @@ def add_fee():
             due_date = request.form['due_date']
             status = request.form['status']
             cursor.execute(
-                "INSERT INTO fees (student_id, semester, amount_due, amount_paid, due_date, status) VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO fees (student_id, semester, amount_due, amount_paid, due_date, status) VALUES (%s, %s, %s, %s, %s, %s)",
                 (student_id, semester, amount_due, amount_paid, due_date, status)
             )
             db.commit()
@@ -828,8 +837,10 @@ def add_fee():
 
 @app.route('/admin/fees/edit/<int:id>', methods=['GET', 'POST'])
 def edit_fee(id):
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
-        cursor.execute("SELECT * FROM fees WHERE id=?", (id,))
+        cursor.execute("SELECT * FROM fees WHERE id=%s", (id,))
         fee = cursor.fetchone()
         if not fee:
             flash("Fee record not found!", "danger")
@@ -844,7 +855,7 @@ def edit_fee(id):
             due_date = request.form['due_date']
             status = request.form['status']
             cursor.execute(
-                "UPDATE fees SET student_id=?, semester=?, amount_due=?, amount_paid=?, due_date=?, status=? WHERE id=?",
+                "UPDATE fees SET student_id=%s, semester=%s, amount_due=%s, amount_paid=%s, due_date=%s, status=%s WHERE id=%s",
                 (student_id, semester, amount_due, amount_paid, due_date, status, id)
             )
             db.commit()
@@ -857,8 +868,10 @@ def edit_fee(id):
 
 @app.route('/admin/fees/delete/<int:id>', methods=['POST'])
 def delete_fee(id):
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
-        cursor.execute("DELETE FROM fees WHERE id=?", (id,))
+        cursor.execute("DELETE FROM fees WHERE id=%s", (id,))
         db.commit()
         flash("Fee record deleted successfully!", "success")
         return redirect(url_for('view_fees'))
@@ -868,6 +881,8 @@ def delete_fee(id):
 
 @app.route('/admin/results')
 def view_results():
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
         cursor.execute(
             """
@@ -885,6 +900,8 @@ def view_results():
 
 @app.route('/admin/teacher-attendance', methods=['GET', 'POST'])
 def admin_teacher_attendance():
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
         if request.method == 'POST':
             teacher_id = request.form['teacher_id']
@@ -892,7 +909,7 @@ def admin_teacher_attendance():
             status = request.form['status']
             notes = request.form['notes']
             cursor.execute(
-                "INSERT INTO teacher_attendance (teacher_id, date, status, notes) VALUES (?, ?, ?, ?)",
+                "INSERT INTO teacher_attendance (teacher_id, date, status, notes) VALUES (%s, %s, %s, %s)",
                 (teacher_id, date, status, notes)
             )
             db.commit()
@@ -912,6 +929,8 @@ def admin_teacher_attendance():
 
 @app.route('/admin/results/add', methods=['GET', 'POST'])
 def add_result():
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
         cursor.execute("SELECT id, name, reg_id FROM students ORDER BY name")
         students = cursor.fetchall()
@@ -925,7 +944,7 @@ def add_result():
             total_marks = request.form['total_marks']
             term = request.form['term']
             cursor.execute(
-                "INSERT INTO results (student_id, course_id, grade, marks_obtained, total_marks, term) VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO results (student_id, course_id, grade, marks_obtained, total_marks, term) VALUES (%s, %s, %s, %s, %s, %s)",
                 (student_id, course_id, grade, marks_obtained, total_marks, term)
             )
             db.commit()
@@ -938,8 +957,10 @@ def add_result():
 
 @app.route('/admin/results/edit/<int:id>', methods=['GET', 'POST'])
 def edit_result(id):
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
-        cursor.execute("SELECT * FROM results WHERE id=?", (id,))
+        cursor.execute("SELECT * FROM results WHERE id=%s", (id,))
         result = cursor.fetchone()
         if not result:
             flash("Result not found!", "danger")
@@ -956,7 +977,7 @@ def edit_result(id):
             total_marks = request.form['total_marks']
             term = request.form['term']
             cursor.execute(
-                "UPDATE results SET student_id=?, course_id=?, grade=?, marks_obtained=?, total_marks=?, term=? WHERE id=?",
+                "UPDATE results SET student_id=%s, course_id=%s, grade=%s, marks_obtained=%s, total_marks=%s, term=%s WHERE id=%s",
                 (student_id, course_id, grade, marks_obtained, total_marks, term, id)
             )
             db.commit()
@@ -969,8 +990,10 @@ def edit_result(id):
 
 @app.route('/admin/results/delete/<int:id>', methods=['POST'])
 def delete_result(id):
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
-        cursor.execute("DELETE FROM results WHERE id=?", (id,))
+        cursor.execute("DELETE FROM results WHERE id=%s", (id,))
         db.commit()
         flash("Result deleted successfully!", "success")
         return redirect(url_for('view_results'))
@@ -980,12 +1003,14 @@ def delete_result(id):
 
 @app.route('/admin/courses')
 def view_courses():
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
         search = request.args.get('q', '').strip()
         if search:
             pattern = f"%{search}%"
             cursor.execute(
-                "SELECT * FROM courses WHERE name LIKE ? OR code LIKE ? OR department LIKE ?",
+                "SELECT * FROM courses WHERE name LIKE %s OR code LIKE %s OR department LIKE %s",
                 (pattern, pattern, pattern)
             )
         else:
@@ -998,6 +1023,8 @@ def view_courses():
 
 @app.route('/teacher')
 def teacher_dashboard():
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'teacher':
         teacher = get_teacher_by_username(session['username'])
         if not teacher:
@@ -1058,20 +1085,22 @@ def teacher_classes():
 
 @app.route('/teacher/class/<int:id>/students')
 def teacher_class_students(id):
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'teacher':
         teacher = get_teacher_by_username(session['username'])
         if not teacher:
             flash("Teacher profile not found.", "danger")
             return redirect(url_for('logout'))
-        cursor.execute("SELECT * FROM class_subjects WHERE class_id=? AND teacher_id=?", (id, teacher['id']))
+        cursor.execute("SELECT * FROM class_subjects WHERE class_id=%s AND teacher_id=%s", (id, teacher['id']))
         assignment = cursor.fetchone()
         if not assignment:
             flash("You are not assigned to this class.", "danger")
             return redirect(url_for('teacher_classes'))
-        cursor.execute("SELECT * FROM students WHERE class_id=?", (id,))
+        cursor.execute("SELECT * FROM students WHERE class_id=%s", (id,))
         students = cursor.fetchall()
         cursor.execute(
-            "SELECT co.id, co.name, co.code FROM class_subjects cs JOIN courses co ON cs.course_id=co.id WHERE cs.class_id=? AND cs.teacher_id=?",
+            "SELECT co.id, co.name, co.code FROM class_subjects cs JOIN courses co ON cs.course_id=co.id WHERE cs.class_id=%s AND cs.teacher_id=%s",
             (id, teacher['id'])
         )
         courses = cursor.fetchall()
@@ -1082,12 +1111,14 @@ def teacher_class_students(id):
 
 @app.route('/teacher/class/<int:id>/assignments', methods=['GET', 'POST'])
 def teacher_class_assignments(id):
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'teacher':
         teacher = get_teacher_by_username(session['username'])
         if not teacher:
             flash("Teacher profile not found.", "danger")
             return redirect(url_for('logout'))
-        cursor.execute("SELECT * FROM class_subjects WHERE class_id=? AND teacher_id=?", (id, teacher['id']))
+        cursor.execute("SELECT * FROM class_subjects WHERE class_id=%s AND teacher_id=%s", (id, teacher['id']))
         assignment = cursor.fetchone()
         if not assignment:
             flash("You are not assigned to this class.", "danger")
@@ -1098,13 +1129,13 @@ def teacher_class_assignments(id):
             due_date = request.form['due_date']
             created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             cursor.execute(
-                "INSERT INTO assignments (class_id, teacher_id, title, description, due_date, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO assignments (class_id, teacher_id, title, description, due_date, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
                 (id, teacher['id'], title, description, due_date, created_at)
             )
             db.commit()
             flash("Assignment created successfully.", "success")
             return redirect(url_for('teacher_class_assignments', id=id))
-        cursor.execute("SELECT * FROM assignments WHERE class_id=? AND teacher_id=? ORDER BY due_date DESC", (id, teacher['id']))
+        cursor.execute("SELECT * FROM assignments WHERE class_id=%s AND teacher_id=%s ORDER BY due_date DESC", (id, teacher['id']))
         assignments = cursor.fetchall()
         return render_template('teacher_class_assignments.html', class_id=id, assignments=assignments)
     flash("Unauthorized access!", "danger")
@@ -1113,17 +1144,19 @@ def teacher_class_assignments(id):
 
 @app.route('/teacher/class/<int:class_id>/assignments/edit/<int:assignment_id>', methods=['GET', 'POST'])
 def edit_assignment(class_id, assignment_id):
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'teacher':
         teacher = get_teacher_by_username(session['username'])
         if not teacher:
             flash("Teacher profile not found.", "danger")
             return redirect(url_for('logout'))
-        cursor.execute("SELECT * FROM class_subjects WHERE class_id=? AND teacher_id=?", (class_id, teacher['id']))
+        cursor.execute("SELECT * FROM class_subjects WHERE class_id=%s AND teacher_id=%s", (class_id, teacher['id']))
         if not cursor.fetchone():
             flash("You are not assigned to this class.", "danger")
             return redirect(url_for('teacher_classes'))
         
-        cursor.execute("SELECT * FROM assignments WHERE id=? AND class_id=? AND teacher_id=?", (assignment_id, class_id, teacher['id']))
+        cursor.execute("SELECT * FROM assignments WHERE id=%s AND class_id=%s AND teacher_id=%s", (assignment_id, class_id, teacher['id']))
         assignment = cursor.fetchone()
         if not assignment:
             flash("Assignment not found.", "danger")
@@ -1135,7 +1168,7 @@ def edit_assignment(class_id, assignment_id):
             due_date = request.form['due_date']
             
             cursor.execute(
-                "UPDATE assignments SET title=?, description=?, due_date=? WHERE id=?",
+                "UPDATE assignments SET title=%s, description=%s, due_date=%s WHERE id=%s",
                 (title, description, due_date, assignment_id)
             )
             db.commit()
@@ -1149,17 +1182,19 @@ def edit_assignment(class_id, assignment_id):
 
 @app.route('/teacher/class/<int:class_id>/assignments/delete/<int:assignment_id>', methods=['POST'])
 def delete_assignment(class_id, assignment_id):
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'teacher':
         teacher = get_teacher_by_username(session['username'])
         if not teacher:
             flash("Teacher profile not found.", "danger")
             return redirect(url_for('logout'))
-        cursor.execute("SELECT * FROM class_subjects WHERE class_id=? AND teacher_id=?", (class_id, teacher['id']))
+        cursor.execute("SELECT * FROM class_subjects WHERE class_id=%s AND teacher_id=%s", (class_id, teacher['id']))
         if not cursor.fetchone():
             flash("You are not assigned to this class.", "danger")
             return redirect(url_for('teacher_classes'))
             
-        cursor.execute("DELETE FROM assignments WHERE id=? AND class_id=? AND teacher_id=?", (assignment_id, class_id, teacher['id']))
+        cursor.execute("DELETE FROM assignments WHERE id=%s AND class_id=%s AND teacher_id=%s", (assignment_id, class_id, teacher['id']))
         db.commit()
         flash("Assignment deleted successfully.", "success")
         return redirect(url_for('teacher_class_assignments', id=class_id))
@@ -1169,20 +1204,22 @@ def delete_assignment(class_id, assignment_id):
 
 @app.route('/teacher/class/<int:id>/attendance', methods=['GET', 'POST'])
 def teacher_class_attendance(id):
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'teacher':
         teacher = get_teacher_by_username(session['username'])
         if not teacher:
             flash("Teacher profile not found.", "danger")
             return redirect(url_for('logout'))
-        cursor.execute("SELECT * FROM class_subjects WHERE class_id=? AND teacher_id=?", (id, teacher['id']))
+        cursor.execute("SELECT * FROM class_subjects WHERE class_id=%s AND teacher_id=%s", (id, teacher['id']))
         assignment = cursor.fetchone()
         if not assignment:
             flash("You are not assigned to this class.", "danger")
             return redirect(url_for('teacher_classes'))
-        cursor.execute("SELECT * FROM students WHERE class_id=?", (id,))
+        cursor.execute("SELECT * FROM students WHERE class_id=%s", (id,))
         students = cursor.fetchall()
         cursor.execute(
-            "SELECT co.id, co.name, co.code FROM class_subjects cs JOIN courses co ON cs.course_id=co.id WHERE cs.class_id=? AND cs.teacher_id=?",
+            "SELECT co.id, co.name, co.code FROM class_subjects cs JOIN courses co ON cs.course_id=co.id WHERE cs.class_id=%s AND cs.teacher_id=%s",
             (id, teacher['id'])
         )
         courses = cursor.fetchall()
@@ -1193,7 +1230,7 @@ def teacher_class_attendance(id):
             for student in students:
                 status = 'Present' if str(student['id']) in present_ids else 'Absent'
                 cursor.execute(
-                    "INSERT INTO class_attendance (class_id, student_id, course_id, date, status) VALUES (?, ?, ?, ?, ?)",
+                    "INSERT INTO class_attendance (class_id, student_id, course_id, date, status) VALUES (%s, %s, %s, %s, %s)",
                     (id, student['id'], course_id, date, status)
                 )
             db.commit()
@@ -1206,6 +1243,8 @@ def teacher_class_attendance(id):
 
 @app.route('/teacher/results', methods=['GET', 'POST'])
 def teacher_results():
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'teacher':
         teacher = get_teacher_by_username(session['username'])
         if not teacher:
@@ -1257,7 +1296,7 @@ def teacher_results():
             total_marks = request.form['total_marks']
             term = request.form['term']
             cursor.execute(
-                "INSERT INTO results (student_id, course_id, grade, marks_obtained, total_marks, term) VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO results (student_id, course_id, grade, marks_obtained, total_marks, term) VALUES (%s, %s, %s, %s, %s, %s)",
                 (student_id, course_id, grade, marks_obtained, total_marks, term)
             )
             db.commit()
@@ -1271,6 +1310,8 @@ def teacher_results():
 
 @app.route('/teacher/my-attendance')
 def teacher_my_attendance():
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'teacher':
         teacher = get_teacher_by_username(session['username'])
         if not teacher:
@@ -1278,7 +1319,7 @@ def teacher_my_attendance():
             return redirect(url_for('logout'))
         
         cursor.execute(
-            "SELECT * FROM teacher_attendance WHERE teacher_id = ? ORDER BY date DESC",
+            "SELECT * FROM teacher_attendance WHERE teacher_id = %s ORDER BY date DESC",
             (teacher['id'],)
         )
         records = cursor.fetchall()
@@ -1298,15 +1339,17 @@ def teacher_feedback():
 
 @app.route('/student')
 def student_dashboard():
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'student':
         student = get_student_by_username(session['username'])
         if not student:
             flash("Student profile not found.", "danger")
             return redirect(url_for('logout'))
         courses = get_student_courses(student['id'])
-        cursor.execute("SELECT * FROM results WHERE student_id=?", (student['id'],))
+        cursor.execute("SELECT * FROM results WHERE student_id=%s", (student['id'],))
         results = cursor.fetchall()
-        cursor.execute("SELECT * FROM fees WHERE student_id=?", (student['id'],))
+        cursor.execute("SELECT * FROM fees WHERE student_id=%s", (student['id'],))
         fees = cursor.fetchall()
 
         due_amount = sum((fee['amount_due'] or 0) - (fee['amount_paid'] or 0) for fee in fees if fee['status'] != 'Paid')
@@ -1351,10 +1394,12 @@ def student_courses():
 
 @app.route('/student/results')
 def student_results():
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'student':
         student = get_student_by_username(session['username'])
         cursor.execute(
-            "SELECT r.*, co.name AS course_name, co.code AS course_code FROM results r JOIN courses co ON r.course_id=co.id WHERE r.student_id=?",
+            "SELECT r.*, co.name AS course_name, co.code AS course_code FROM results r JOIN courses co ON r.course_id=co.id WHERE r.student_id=%s",
             (student['id'],)
         )
         results = cursor.fetchall()
@@ -1365,6 +1410,8 @@ def student_results():
 
 @app.route('/student/course/<int:course_id>/attendance')
 def student_course_attendance(course_id):
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'student':
         student = get_student_by_username(session['username'])
         if not student:
@@ -1376,7 +1423,7 @@ def student_course_attendance(course_id):
             SELECT ca.*, co.name AS course_name, co.code AS course_code 
             FROM class_attendance ca 
             JOIN courses co ON ca.course_id = co.id 
-            WHERE ca.student_id = ? AND ca.course_id = ?
+            WHERE ca.student_id = %s AND ca.course_id = %s
             ORDER BY ca.date DESC
             """,
             (student['id'], course_id)
@@ -1384,7 +1431,7 @@ def student_course_attendance(course_id):
         attendance = cursor.fetchall()
         
         # Get course info for the header if attendance is empty
-        cursor.execute("SELECT name, code FROM courses WHERE id=?", (course_id,))
+        cursor.execute("SELECT name, code FROM courses WHERE id=%s", (course_id,))
         course = cursor.fetchone()
         
         return render_template('student_attendance.html', student=student, attendance=attendance, course=course)
@@ -1394,12 +1441,14 @@ def student_course_attendance(course_id):
 
 @app.route('/student/course/<int:course_id>/assignments')
 def student_course_assignments(course_id):
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'student':
         student = get_student_by_username(session['username'])
-        cursor.execute("SELECT name, code FROM courses WHERE id=?", (course_id,))
+        cursor.execute("SELECT name, code FROM courses WHERE id=%s", (course_id,))
         course = cursor.fetchone()
         
-        cursor.execute("SELECT * FROM assignments WHERE class_id = ? AND teacher_id IN (SELECT teacher_id FROM class_subjects WHERE class_id = ? AND course_id = ?) ORDER BY due_date DESC", (student['class_id'], student['class_id'], course_id))
+        cursor.execute("SELECT * FROM assignments WHERE class_id = %s AND teacher_id IN (SELECT teacher_id FROM class_subjects WHERE class_id = %s AND course_id = %s) ORDER BY due_date DESC", (student['class_id'], student['class_id'], course_id))
         assignments = cursor.fetchall()
         return render_template('student_assignments.html', student=student, assignments=assignments, course=course)
     flash("Unauthorized access!", "danger")
@@ -1408,9 +1457,11 @@ def student_course_assignments(course_id):
 
 @app.route('/student/fees')
 def student_fees():
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'student':
         student = get_student_by_username(session['username'])
-        cursor.execute("SELECT * FROM fees WHERE student_id=?", (student['id'],))
+        cursor.execute("SELECT * FROM fees WHERE student_id=%s", (student['id'],))
         fees = cursor.fetchall()
         return render_template('student_fees.html', student=student, fees=fees)
     flash("Unauthorized access!", "danger")
@@ -1419,6 +1470,8 @@ def student_fees():
 
 @app.route('/admin/courses/add', methods=['GET', 'POST'])
 def add_course():
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
         if request.method == 'POST':
             name = request.form['name']
@@ -1429,13 +1482,13 @@ def add_course():
             department = request.form['department']
             try:
                 cursor.execute(
-                    "INSERT INTO courses (name, code, credit_hours, theory_hours, practical_hours, department) VALUES (?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO courses (name, code, credit_hours, theory_hours, practical_hours, department) VALUES (%s, %s, %s, %s, %s, %s)",
                     (name, code, credit_hours, theory_hours, practical_hours, department)
                 )
                 db.commit()
                 flash(f"Course '{name}' added successfully.", "success")
                 return redirect(url_for('view_courses'))
-            except sqlite3.IntegrityError:
+            except psycopg2.IntegrityError:
                 flash("Course code must be unique.", "danger")
         return render_template('admin_add_course.html')
     flash("Unauthorized access!", "danger")
@@ -1444,8 +1497,10 @@ def add_course():
 
 @app.route('/admin/courses/edit/<int:id>', methods=['GET', 'POST'])
 def edit_course(id):
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
-        cursor.execute("SELECT * FROM courses WHERE id=?", (id,))
+        cursor.execute("SELECT * FROM courses WHERE id=%s", (id,))
         course = cursor.fetchone()
         if not course:
             flash("Course not found!", "danger")
@@ -1459,13 +1514,13 @@ def edit_course(id):
             department = request.form['department']
             try:
                 cursor.execute(
-                    "UPDATE courses SET name=?, code=?, credit_hours=?, theory_hours=?, practical_hours=?, department=? WHERE id=?",
+                    "UPDATE courses SET name=%s, code=%s, credit_hours=%s, theory_hours=%s, practical_hours=%s, department=%s WHERE id=%s",
                     (name, code, credit_hours, theory_hours, practical_hours, department, id)
                 )
                 db.commit()
                 flash("Course updated successfully.", "success")
                 return redirect(url_for('view_courses'))
-            except sqlite3.IntegrityError:
+            except psycopg2.IntegrityError:
                 flash("Course code must be unique.", "danger")
         return render_template('admin_edit_course.html', course=course)
     flash("Unauthorized access!", "danger")
@@ -1474,8 +1529,10 @@ def edit_course(id):
 
 @app.route('/admin/courses/delete/<int:id>', methods=['POST'])
 def delete_course(id):
+    db = get_db()
+    cursor = db.cursor()
     if 'role' in session and session['role'] == 'admin':
-        cursor.execute("DELETE FROM courses WHERE id=?", (id,))
+        cursor.execute("DELETE FROM courses WHERE id=%s", (id,))
         db.commit()
         flash("Course deleted successfully!", "success")
         return redirect(url_for('view_courses'))
